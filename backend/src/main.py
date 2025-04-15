@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .cronjobs import scrape_linkedin_jobs
+from .scrapers import linkedin
 from .database import engine
 from .routers import auth
 from .models import Base
@@ -17,8 +17,8 @@ async def lifespan(app: FastAPI):
     """Lifespan context manager for the FastAPI app"""
     scheduler = BackgroundScheduler()
     logger.info("Starting background jobs scheduler...")
-    scrape_linkedin_jobs()  # Initial run of the job
-    scheduler.add_job(scrape_linkedin_jobs, "interval", seconds=5)
+    linkedin.scrape_linkedin_jobs()  # Initial run of the job
+    scheduler.add_job(linkedin.scrape_linkedin_jobs, "interval", hours=6)
     scheduler.start()
     yield
     logger.info("Shutting down background jobs scheduler...")

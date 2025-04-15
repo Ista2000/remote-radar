@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Boolean, Column, Integer, String, DateTime, Text
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -22,3 +22,23 @@ class User(Base):
     resume_url = Column(String)  # Path or S3 URL to uploaded resume
     resume_text = Column(String)  # Parsed plain text of the resume
     resume_parsed = Column(String)  # Structured JSON (skills, education, etc.)
+
+
+class Job(Base):
+    __tablename__ = "jobs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    company = Column(String, nullable=False)
+    location = Column(String, index=True)
+    description = Column(Text)
+    url = Column(String, unique=True, nullable=False)
+    source = Column(String, nullable=False)
+
+    salary_min = Column(Integer)
+    salary_max = Column(Integer)
+    salary_currency = Column(String, default='USD')
+    salary_from_levels_fyi = Column(Boolean, default=False)
+
+    posted_at = Column(DateTime)
+    is_active = Column(Boolean, default=True)
