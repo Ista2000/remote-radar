@@ -1,14 +1,35 @@
+import logging
+
+from apscheduler.schedulers.background import BackgroundScheduler
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .cronjobs import scrape_linkedin_jobs
 from .database import engine
 from .routers import auth
-from .models import Base, User
+from .models import Base
+
+logger = logging.getLogger("uvicorn")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for the FastAPI app"""
+    scheduler = BackgroundScheduler()
+    logger.info("Starting background jobs scheduler...")
+    scrape_linkedin_jobs()  # Initial run of the job
+    scheduler.add_job(scrape_linkedin_jobs, "interval", seconds=5)
+    scheduler.start()
+    yield
+    logger.info("Shutting down background jobs scheduler...")
+    scheduler.shutdown()
+
 
 app = FastAPI(
     title="Remote Radar API",
     description="Backend API for Remote Radar application",
-    version="0.1.0"
+    version="0.1.0",
+    lifespan=lifespan,
 )
 
 Base.metadata.create_all(bind=engine)  # Create database tables
