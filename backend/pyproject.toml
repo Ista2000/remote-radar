@@ -1,0 +1,25 @@
+[project]
+name = "remote-radar"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Ista2000",email = "mishra.istasis@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "fastapi (>=0.115.12,<0.116.0)",
+    "uvicorn[standard] (>=0.34.1,<0.35.0)",
+    "sqlalchemy (>=2.0.40,<3.0.0)",
+    "passlib (>=1.7.4,<2.0.0)",
+    "python-jose (>=3.4.0,<4.0.0)",
+    "python-multipart (>=0.0.20,<0.0.21)",
+    "bcrypt (>=4.3.0,<5.0.0)",
+]
+
+[tool.poetry]
+package-mode = false
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
