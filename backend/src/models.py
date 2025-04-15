@@ -1,10 +1,13 @@
-from sqlalchemy import Boolean, Column, Integer, String, DateTime, Text
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import Boolean, Column, DateTime, Integer, String, Text
+from sqlalchemy.orm import DeclarativeBase
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    pass
+
 
 class User(Base):
-    __tablename__ = 'users'
+    __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
@@ -37,7 +40,7 @@ class Job(Base):
 
     salary_min = Column(Integer)
     salary_max = Column(Integer)
-    salary_currency = Column(String, default='USD')
+    salary_currency = Column(String, default="USD")
     salary_from_levels_fyi = Column(Boolean, default=False)
 
     posted_at = Column(DateTime)

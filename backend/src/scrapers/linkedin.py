@@ -1,11 +1,13 @@
-from bs4 import BeautifulSoup
 import logging
+
 import requests
+from bs4 import BeautifulSoup
 
 from ..util import get_posted_date
 from .scraper_base import ScraperBase
 
 logger = logging.getLogger("uvicorn")
+
 
 class LinkedInScraper(ScraperBase):
     def __init__(self, db, role="software engineer", num_jobs=5):
@@ -16,9 +18,7 @@ class LinkedInScraper(ScraperBase):
     def fetch_job_listing_urls(self):
         logger.info("Fetching job listings from LinkedIn...")
         try:
-            headers = {
-                "User-Agent": "Mozilla/5.0"
-            }
+            headers = {"User-Agent": "Mozilla/5.0"}
             url = f"https://www.linkedin.com/jobs/search/?keywords={self.role}&f_WT=2&position=1&pageNum=0"
 
             response = requests.get(url, headers=headers)
@@ -27,7 +27,10 @@ class LinkedInScraper(ScraperBase):
             for job_card in soup.select("ul.jobs-search__results-list li"):
                 link_elem = job_card.find("a", href=True)
                 if link_elem is not None:
-                    self.urls.append("https://www.linkedin.com/" + '/'.join(link_elem['href'].split('?')[0].split('/')[3:]))
+                    self.urls.append(
+                        "https://www.linkedin.com/"
+                        + "/".join(link_elem["href"].split("?")[0].split("/")[3:])
+                    )
                 if len(self.urls) >= self.num_jobs:
                     break
         except Exception as e:
@@ -46,23 +49,27 @@ class LinkedInScraper(ScraperBase):
         if company_elem:
             return company_elem.get_text(strip=True)
         return None
-    
+
     def parse_job_location(self, soup):
-        location_elem = soup.find("span", class_="topcard__flavor topcard__flavor--bullet")
+        location_elem = soup.find(
+            "span", class_="topcard__flavor topcard__flavor--bullet"
+        )
         if location_elem:
             return location_elem.get_text(strip=True)
         return None
-    
+
     def parse_job_description(self, soup):
-        description_elem = soup.find('div', class_='description__text description__text--rich')
+        description_elem = soup.find(
+            "div", class_="description__text description__text--rich"
+        )
         if description_elem:
-            return description_elem.get_text(strip=True, separator=' ')
+            return description_elem.get_text(strip=True, separator=" ")
         return None
-    
+
     def parse_posted_at(self, soup):
-        time_elem = soup.find('time', class_='aside-job-card__listdate--new')
+        time_elem = soup.find("time", class_="aside-job-card__listdate--new")
         if time_elem is None:
-            time_elem = soup.find('time', class_='aside-job-card__listdate')
+            time_elem = soup.find("time", class_="aside-job-card__listdate")
         if time_elem is None:
             return None
         time_elem = time_elem.get_text(strip=True)

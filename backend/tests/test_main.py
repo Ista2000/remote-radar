@@ -1,7 +1,9 @@
 from fastapi import status
 
-from .utils import verify_password
 from backend.src.models import User
+
+from .utils import verify_password
+
 
 def test_create_user(client, db) -> None:
     response = client.post(
@@ -11,7 +13,7 @@ def test_create_user(client, db) -> None:
             "password": "testpassword",
             "full_name": "Test User",
             "experience_years": 5,
-        }
+        },
     )
 
     assert response.status_code == status.HTTP_201_CREATED
@@ -30,13 +32,14 @@ def test_create_user(client, db) -> None:
     assert user.resume_text is None
     assert user.resume_parsed is None
 
+
 def test_login_correct_password(client, db_with_user):
     response = client.post(
         "/auth/token",
         data={
             "username": "testuser",
             "password": "testpassword",
-        }
+        },
     )
 
     user = db_with_user.query(User).filter(User.email == "testuser").first()
@@ -49,14 +52,15 @@ def test_login_correct_password(client, db_with_user):
     assert "access_token" in data
     assert data["token_type"] == "bearer"
 
+
 def test_login_wrong_password(client, db_with_user):
     response = client.post(
         "/auth/token",
         data={
             "username": "testuser",
             "password": "userpassword",
-        }
+        },
     )
-    db_with_user.query(User).filter(User.email == "testuser").first() is not None
+    assert db_with_user.query(User).filter(User.email == "testuser").first() is not None
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED

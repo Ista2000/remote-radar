@@ -1,15 +1,17 @@
-from datetime import datetime, timedelta, timezone
 import json
-from typing import Annotated
+import os
+from datetime import datetime, timedelta, timezone
+from typing import Annotated, Optional
+
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import jwt
-import os
-from ..models import User
+from pydantic import BaseModel
+
 from ..constants import DEFAULT_TOKEN_EXPIRE_MINUTES
 from ..deps import bcrypt_context, db_dependency
+from ..models import User
 
 load_dotenv()
 
@@ -18,26 +20,29 @@ router = APIRouter(
     tags=["auth"],
 )
 
-SECRET_KEY = os.getenv("AUTH_SECRET_KEY")
-ALGORITHM = os.getenv("AUTH_ALGORITHM")
+SECRET_KEY = str(os.getenv("AUTH_SECRET_KEY", ""))
+ALGORITHM = str(os.getenv("AUTH_ALGORITHM", ""))
+
 
 class UserCreateRequest(BaseModel):
     email: str
     password: str
     full_name: str
-    experience_years: int = None
+    experience_years: Optional[int] = None
     preferred_roles: list[str] = []
     preferred_locations: list[str] = []
     preferred_sources: list[str] = []
     receive_email_alerts: bool = False
     is_admin: bool = False
-    resume_url: str = None
-    resume_text: str = None
-    resume_parsed: str = None
+    resume_url: Optional[str] = None
+    resume_text: Optional[str] = None
+    resume_parsed: Optional[str] = None
+
 
 class Token(BaseModel):
     access_token: str
     token_type: str
+
 
 def authenticate_user(username: str, password: str, db):
     """Authenticate user with username and password"""
@@ -48,12 +53,17 @@ def authenticate_user(username: str, password: str, db):
         return False
     return user
 
-def create_access_token(email: str, expires_delta: timedelta = timedelta(minutes=DEFAULT_TOKEN_EXPIRE_MINUTES)):
+
+def create_access_token(
+    email: str,
+    expires_delta: timedelta = timedelta(minutes=DEFAULT_TOKEN_EXPIRE_MINUTES),
+):
     """Create a JWT access token"""
-    to_encode = {'sub': email}
+    to_encode = {"sub": email}
     expire = datetime.now(timezone.utc) + expires_delta
-    to_encode.update({'exp': expire})
+    to_encode.update({"exp": str(expire)})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def create_user(user: UserCreateRequest, db: db_dependency):
@@ -77,8 +87,11 @@ def create_user(user: UserCreateRequest, db: db_dependency):
     db.commit()
     db.refresh(db_user)
 
+
 @router.post("/token", response_model=Token)
-def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: db_dependency):
+def login_for_access_token(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: db_dependency
+):
     """Login user and return access token"""
     user = authenticate_user(form_data.username, form_data.password, db)
     if not user:

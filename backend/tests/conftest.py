@@ -1,13 +1,13 @@
-from fastapi.testclient import TestClient
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import StaticPool, create_engine
 from sqlalchemy.orm import sessionmaker
 
-from .utils import hash_password
 from backend.src.deps import get_db
 from backend.src.main import app
 from backend.src.models import Base, User
 
+from .utils import hash_password
 
 
 @pytest.fixture(scope="function")
@@ -18,18 +18,21 @@ def db():
         poolclass=StaticPool,
     )
     Base.metadata.create_all(bind=engine)
-    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    db = TestingSessionLocal()
+    testing_session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    db = testing_session_local()
     yield db
     db.close()
+
 
 @pytest.fixture()
 def client(db):
     def override_get_db():
         yield db
+
     app.dependency_overrides[get_db] = override_get_db
     yield TestClient(app)
     app.dependency_overrides.clear()
+
 
 @pytest.fixture(scope="function")
 def db_with_user(db):

@@ -1,7 +1,7 @@
 import logging
+from contextlib import asynccontextmanager
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -12,6 +12,7 @@ from .routers import auth
 from .scrapers.scraper_factory import ScraperFactory
 
 logger = logging.getLogger("uvicorn")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -49,15 +50,17 @@ Base.metadata.create_all(bind=engine)  # Create database tables
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["htpp://localhost:3000"], # Allow requests from this origin
+    allow_origins=["htpp://localhost:3000"],  # Allow requests from this origin
     allow_credentials=True,
     allow_methods=["*"],  # Allow all methods
     allow_headers=["*"],  # Allow all headers
 )
 
+
 @app.get("/")
 async def root():
     """Root endpoint returning a welcome message"""
     return {"message": "Welcome to Remote Radar API"}
+
 
 app.include_router(auth.router)  # Include the auth router
