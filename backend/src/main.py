@@ -5,10 +5,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .scrapers import linkedin
 from .database import engine
-from .routers import auth
+from .deps import get_db
 from .models import Base
+from .routers import auth
+from .scrapers.scraper_factory import ScraperFactory
 
 logger = logging.getLogger("uvicorn")
 
@@ -17,8 +18,20 @@ async def lifespan(app: FastAPI):
     """Lifespan context manager for the FastAPI app"""
     scheduler = BackgroundScheduler()
     logger.info("Starting background jobs scheduler...")
-    linkedin.scrape_linkedin_jobs()  # Initial run of the job
-    scheduler.add_job(linkedin.scrape_linkedin_jobs, "interval", hours=6)
+    db_gen = get_db()
+    db = next(db_gen)  # Get the database session
+    for scraper in ScraperFactory(db).get_all_scrapers():
+        scraper.run()  # Initial run to fetch data immediately
+        # Schedule the scraper to run every 6 hours
+        scheduler.add_job(
+            scraper.run,
+            trigger="interval",
+            seconds=60 * 60 * 6,  # Run every 6 hours
+        )
+    try:
+        next(db_gen)  # Ensure the database session is yielded
+    except StopIteration:
+        pass
     scheduler.start()
     yield
     logger.info("Shutting down background jobs scheduler...")
