@@ -12,6 +12,9 @@ from .prompts import *
 load_dotenv()
 
 GROQ_API_KEY = str(os.getenv("GROQ_API_KEY", ""))
+LLM_MODEL = json.loads(
+    str(os.getenv("LLM_MODEL", '["llama-3.1-70b-versatile", "llama-3.1-8b-instant"]'))
+)
 
 logger = logging.getLogger("uvicorn")
 
@@ -19,12 +22,15 @@ logger = logging.getLogger("uvicorn")
 class LLM:
     """Class to interact with the LLM API."""
 
-    def __init__(self):
-        self.llm = ChatGroq(
-            temperature=0,
-            groq_api_key=GROQ_API_KEY,
-            model_name="llama-3.1-8b-instant",
-        )
+    def __init__(self) -> None:
+        self.llms = [
+            ChatGroq(
+                temperature=0,
+                groq_api_key=GROQ_API_KEY,
+                model_name=model_name,
+            )
+            for model_name in LLM_MODEL
+        ]
 
     def extract_job_from_page_data(
         self,
@@ -35,22 +41,24 @@ class LLM:
         location: str,
     ) -> dict[str, str]:
         """Extract job details from the url."""
-        try:
-            chain_extract = (
-                PromptTemplate(template=EXTRACTJOB_FROM_PAGE_DATA_TEMPLATE) | self.llm
-            )
-            response: str = chain_extract.invoke(
-                {
-                    "page_data": page_data,
-                    "levels_fyi_page_data": scrape_levels_fyi(
-                        company=company,
-                        role=role,
-                        location=location,
-                    ),
-                    "source": source,
-                }
-            ).content
-            return json.loads(response[8:-4])
-        except Exception:
-            logger.error(f"Error extracting job details: {traceback.format_exc()}")
-            return {}
+        for llm in self.llms:
+            try:
+                chain_extract = (
+                    PromptTemplate(template=EXTRACTJOB_FROM_PAGE_DATA_TEMPLATE) | llm
+                )
+                response: str = chain_extract.invoke(
+                    {
+                        "page_data": page_data,
+                        "levels_fyi_page_data": scrape_levels_fyi(
+                            company=company,
+                            role=role,
+                            location=location,
+                        ),
+                        "source": source,
+                    }
+                ).content
+                return json.loads(response[8:-4])
+            except Exception:
+                logger.error(f"Error extracting job details: {traceback.format_exc()}")
+                continue
+        return {}
