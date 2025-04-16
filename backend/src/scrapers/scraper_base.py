@@ -5,10 +5,9 @@ import requests
 import time
 from abc import abstractmethod
 from bs4 import BeautifulSoup
-from typing import Dict, List
+from typing import Dict, List, Optional
 
-from ..deps import db_dependency
-from ..llm.llm import LLM
+from ..deps import db_dependency, llm
 from ..models import Job
 
 logger = logging.getLogger("uvicorn")
@@ -21,7 +20,6 @@ class ScraperBase:
         self.db = db
         self.urls: List[str] = []
         self.job_listings: List[Dict[str, str]] = []
-        self.llm = LLM()
 
     @abstractmethod
     def fetch_job_listing_urls(self) -> None:
@@ -49,6 +47,11 @@ class ScraperBase:
         pass
 
     @abstractmethod
+    def parse_required_experience(self, soup: BeautifulSoup) -> Optional[str]:
+        """Parse required experience from the soup object fetched from the URL."""
+        pass
+
+    @abstractmethod
     def parse_posted_at(self, soup: BeautifulSoup) -> str:
         """Parse the posted date from the soup object fetched from the URL."""
         pass
@@ -58,15 +61,15 @@ class ScraperBase:
     ) -> dict[str, str]:
         """Infer job details using LLM."""
         try:
-            return self.llm.extract_job_from_page_data(
+            return llm.extract_job_from_page_data(
                 page_data=page_data,
                 source=self.source,
                 company=company,
                 role=self.role,
                 location=location,
             )
-        except Exception as e:
-            logger.error(f"Error inferring job details: {e}")
+        except Exception:
+            logger.error(f"Error inferring job details: {traceback.format_exc()}")
             return {}
 
     def parse_job_details(self, url):
@@ -92,7 +95,9 @@ class ScraperBase:
                 "posted_at": self.parse_posted_at(soup),
             }
             if "description" not in job_details:
-                job_details["description"] = self.parse_job_description(soup)
+                description = self.parse_job_description(soup)
+                if description:
+                    job_details["description"] = description
             return job_details
         except Exception as e:
             logger.error(
@@ -103,6 +108,7 @@ class ScraperBase:
                 "company": None,
                 "location": None,
                 "description": None,
+                "required_experience": None,
                 "url": url,
                 "posted_at": None,
                 "salary_min": None,
@@ -120,6 +126,7 @@ class ScraperBase:
                         company=job_dict["company"],
                         location=job_dict["location"],
                         description=job_dict["description"],
+                        required_experience=job_dict.get("required_experience"),
                         url=job_dict["url"],
                         source=self.source,
                         salary_min=job_dict.get("salary_min"),
@@ -135,11 +142,13 @@ class ScraperBase:
                 ]
             )
             self.db.commit()
-        except IntegrityError as e:
-            logger.error(f"Integrity error while saving to DB: {e}")
+        except IntegrityError:
+            logger.error(
+                f"Integrity error while saving to DB: {traceback.format_exc()}"
+            )
             self.db.rollback()
-        except Exception as e:
-            logger.error(f"Error while saving to DB: {e}")
+        except Exception:
+            logger.error(f"Error while saving to DB: {traceback.format_exc()}")
             self.db.rollback()
 
     def log_jobs(self, jobs: list[dict]):

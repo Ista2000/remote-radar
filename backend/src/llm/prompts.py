@@ -4,7 +4,7 @@ EXTRACTJOB_FROM_PAGE_DATA_TEMPLATE = """
 ### INSTRUCTION:
 The scraped text is from a job listing page from {source}.
 Your job is to extract from the job posting and present the following keys and values in JSON format:
-`description`, `salary_min`, `salary_max`, `salary_currency`, `salary_from_levels_fyi`.
+`description`, `required_experience`, `salary_min`, `salary_max`, `salary_currency`, `salary_from_levels_fyi`.
 Content of the `description` should be as is but in html with some formatting to prettify it using <hX>, <b>, <em> tags.
 `salary_from_levels_fyi` is a boolean indicating whether salary was available at source was was fetched from levels.fyi.
 If the salary information is not available then use the following data (data may be null) then set them as null:

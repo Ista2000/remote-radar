@@ -8,6 +8,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
+from .llm.llm import LLM
 from .database import SessionLocal
 
 # Load environment variables from .env file
@@ -15,6 +16,8 @@ load_dotenv()
 
 SECRET_KEY = str(os.getenv("AUTH_SECRET_KEY", ""))
 ALGORITHM = str(os.getenv("AUTH_ALGORITHM", ""))
+
+llm = LLM()
 
 
 def get_db():

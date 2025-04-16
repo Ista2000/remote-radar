@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import traceback
 from dotenv import load_dotenv
 from langchain_core.prompts import PromptTemplate
 from langchain_groq import ChatGroq
@@ -50,6 +51,6 @@ class LLM:
                 }
             ).content
             return json.loads(response[8:-4])
-        except Exception as e:
-            logger.error(f"Error extracting job details: {e}")
+        except Exception:
+            logger.error(f"Error extracting job details: {traceback.format_exc()}")
             return {}

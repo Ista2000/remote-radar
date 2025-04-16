@@ -1,4 +1,5 @@
 import logging
+import traceback
 
 import requests
 from bs4 import BeautifulSoup
@@ -36,8 +37,10 @@ class LinkedInScraper(ScraperBase):
                             break
                 if len(self.urls) >= self.num_jobs:
                     break
-        except Exception as e:
-            logger.error(f"Error fetching job listings from LinkedIn: {e}")
+        except Exception:
+            logger.error(
+                f"Error fetching job listings from LinkedIn: {traceback.format_exc()}"
+            )
         finally:
             logger.info(f"Fetched {len(self.urls)} job listings.")
 
@@ -77,3 +80,6 @@ class LinkedInScraper(ScraperBase):
             return None
         time_elem = time_elem.get_text(strip=True)
         return get_posted_date(time_elem)
+
+    def parse_required_experience(self, soup):
+        return None
