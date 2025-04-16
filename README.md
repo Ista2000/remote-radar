@@ -25,7 +25,7 @@
 - **Scheduling**: APScheduler
 - **ORM**: SQLAlchemy
 - **AI**: Langchain + Groq (LLaMA 3 models)
-- **Dev tools**: Poetry, MyPy, Ruff, Black, Pytest
+- **Dev tools**: Poetry, MyPy, Black, Pytest
 
 ---
 

@@ -4,7 +4,7 @@ import traceback
 import requests
 from bs4 import BeautifulSoup
 
-from ..util import get_posted_date
+from ..utils import get_posted_date
 from .scraper_base import ScraperBase
 
 logger = logging.getLogger("uvicorn")
@@ -13,7 +13,6 @@ logger = logging.getLogger("uvicorn")
 class LinkedInScraper(ScraperBase):
     def __init__(self, db, role="software engineer", num_jobs=2):
         super().__init__(source="LinkedIn", role=role, db=db)
-        self.role = role
         self.num_jobs = num_jobs
 
     def fetch_job_listing_urls(self):

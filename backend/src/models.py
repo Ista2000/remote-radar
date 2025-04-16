@@ -43,7 +43,7 @@ class Job(Base):
     salary_max = Column(Integer)
     salary_currency = Column(String, default="USD")
     salary_from_levels_fyi = Column(Boolean, default=False)
-    required_experience = Column(String)
+    required_experience = Column(Integer)
 
     posted_at = Column(DateTime)
     is_active = Column(Boolean, default=True)

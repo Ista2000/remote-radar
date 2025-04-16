@@ -3,11 +3,10 @@ from fastapi.testclient import TestClient
 from sqlalchemy import StaticPool, create_engine
 from sqlalchemy.orm import sessionmaker
 
-from backend.src.deps import get_db
-from backend.src.main import app
-from backend.src.models import Base, User
-
-from .utils import hash_password
+from ..src.deps import get_db
+from ..src.main import app
+from ..src.models import Base, User
+from ..src.utils import hash_password
 
 
 @pytest.fixture(scope="function")

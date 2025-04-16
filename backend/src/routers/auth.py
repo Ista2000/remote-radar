@@ -1,7 +1,7 @@
 import json
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Annotated, Optional
+from typing import Annotated, Any, Optional
 
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -9,8 +9,9 @@ from fastapi.security import OAuth2PasswordRequestForm
 from jose import jwt
 from pydantic import BaseModel
 
+from ..utils import hash_password, verify_password
 from ..constants import DEFAULT_TOKEN_EXPIRE_MINUTES
-from ..deps import bcrypt_context, db_dependency
+from ..deps import db_dependency
 from ..models import User
 
 load_dotenv()
@@ -44,13 +45,13 @@ class Token(BaseModel):
     token_type: str
 
 
-def authenticate_user(username: str, password: str, db):
+def authenticate_user(username: str, password: str, db) -> Optional[User]:
     """Authenticate user with username and password"""
-    user = db.query(User).filter(User.email == username).first()
+    user: User = db.query(User).filter(User.email == username).first()
     if not user:
-        return False
-    if not bcrypt_context.verify(password, user.hashed_password):
-        return False
+        return None
+    if not verify_password(password, user.hashed_password):
+        return None
     return user
 
 
@@ -59,16 +60,16 @@ def create_access_token(
     expires_delta: timedelta = timedelta(minutes=DEFAULT_TOKEN_EXPIRE_MINUTES),
 ):
     """Create a JWT access token"""
-    to_encode = {"sub": email}
+    to_encode: dict[str, Any] = {"sub": email}
     expire = datetime.now(timezone.utc) + expires_delta
-    to_encode.update({"exp": str(expire)})
+    to_encode.update({"exp": int(expire.timestamp())})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def create_user(user: UserCreateRequest, db: db_dependency):
     """Create a new user"""
-    hashed_password = bcrypt_context.hash(user.password)
+    hashed_password = hash_password(user.password)
     db_user = User(
         email=user.email,
         hashed_password=hashed_password,

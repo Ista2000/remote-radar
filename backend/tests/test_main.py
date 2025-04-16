@@ -2,7 +2,7 @@ from fastapi import status
 
 from backend.src.models import User
 
-from .utils import verify_password
+from ..src.utils import verify_password
 
 
 def test_create_user(client, db) -> None:
@@ -17,7 +17,7 @@ def test_create_user(client, db) -> None:
     )
 
     assert response.status_code == status.HTTP_201_CREATED
-    user = db.query(User).filter(User.email == "testuser").first()
+    user: User = db.query(User).filter(User.email == "testuser").first()
     assert user is not None
     assert user.email == "testuser"
     assert verify_password("testpassword", user.hashed_password)

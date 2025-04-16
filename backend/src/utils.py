@@ -1,7 +1,24 @@
-import re
 from datetime import datetime
-
 from dateutil.relativedelta import relativedelta
+import bcrypt
+import re
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return bcrypt.checkpw(
+        bytes(plain_password, encoding="utf-8"),
+        bytes(hashed_password, encoding="utf-8"),
+    )
+
+
+def hash_password(password: str) -> str:
+    return str(
+        bcrypt.hashpw(
+            bytes(password, encoding="utf-8"),
+            bcrypt.gensalt(),
+        ),
+        encoding="utf-8",
+    )
 
 
 def get_posted_date(relative_date_str: str) -> datetime:

@@ -2,9 +2,12 @@ import json
 import logging
 import os
 import traceback
+from typing import Optional
 from dotenv import load_dotenv
+from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain_groq import ChatGroq
+from pydantic import BaseModel, Field
 
 from ..scrapers.levels_fyi import scrape_levels_fyi
 from .prompts import *
@@ -17,6 +20,21 @@ LLM_MODEL = json.loads(
 )
 
 logger = logging.getLogger("uvicorn")
+
+
+class Job(BaseModel):
+    description: str = Field(
+        "Description of the job prettified with HTML tags like <b>, <em>, etc."
+    )
+    required_experience: Optional[int] = Field(
+        "Minimum years of required experience for the job"
+    )
+    salary_min: Optional[int] = Field("Minimum salary offered by the job")
+    salary_max: Optional[int] = Field("Maximum salary offered by the job")
+    salary_currency: Optional[str] = Field("Currency of the salary offered by the job")
+    salary_from_levels_fyi: bool = Field(
+        "Did the salary need to be fetched from levels.fyi"
+    )
 
 
 class LLM:
@@ -43,10 +61,13 @@ class LLM:
         """Extract job details from the url."""
         for llm in self.llms:
             try:
+                parser = PydanticOutputParser(pydantic_object=Job)
                 chain_extract = (
-                    PromptTemplate(template=EXTRACTJOB_FROM_PAGE_DATA_TEMPLATE) | llm
+                    PromptTemplate(template=EXTRACTJOB_FROM_PAGE_DATA_TEMPLATE)
+                    | llm
+                    | parser
                 )
-                response: str = chain_extract.invoke(
+                response: Job = chain_extract.invoke(
                     {
                         "page_data": page_data,
                         "levels_fyi_page_data": scrape_levels_fyi(
@@ -56,8 +77,8 @@ class LLM:
                         ),
                         "source": source,
                     }
-                ).content
-                return json.loads(response[8:-4])
+                )
+                return response.model_dump()
             except Exception:
                 logger.error(f"Error extracting job details: {traceback.format_exc()}")
                 continue

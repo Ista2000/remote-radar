@@ -7,7 +7,7 @@ from abc import abstractmethod
 from bs4 import BeautifulSoup
 from typing import Dict, List, Optional
 
-from ..deps import db_dependency, llm
+from ..deps import db_dependency, job_collection, llm
 from ..models import Job
 
 logger = logging.getLogger("uvicorn")
@@ -72,6 +72,20 @@ class ScraperBase:
             logger.error(f"Error inferring job details: {traceback.format_exc()}")
             return {}
 
+    def add_job_details_to_collection(self, job_details: list[dict[str, str]]) -> None:
+        """Add job details to the collection."""
+        try:
+            job_collection.add(
+                documents=[
+                    job_detail["title"] + job_detail["description"]
+                    for job_detail in job_details
+                ],
+                metadatas=[{"url": job_detail["url"]} for job_detail in job_details],
+                ids=[job_detail["url"] for job_detail in job_details],
+            )
+        except Exception as e:
+            logger.error(f"Error adding job details to collection: {e}")
+
     def parse_job_details(self, url):
         logger.info(f"Parsing job details from {url}...")
         try:
@@ -93,6 +107,7 @@ class ScraperBase:
                 "location": location,
                 "url": url,
                 "posted_at": self.parse_posted_at(soup),
+                "role": self.role,
             }
             if "description" not in job_details:
                 description = self.parse_job_description(soup)
@@ -115,6 +130,7 @@ class ScraperBase:
                 "salary_max": None,
                 "salary_currency": None,
                 "salary_from_levels_fyi": False,
+                "role": self.role,
             }
 
     def save_to_db(self, jobs: list[dict]):
@@ -125,6 +141,7 @@ class ScraperBase:
                         title=job_dict["title"],
                         company=job_dict["company"],
                         location=job_dict["location"],
+                        role=job_dict["role"],
                         description=job_dict["description"],
                         required_experience=job_dict.get("required_experience"),
                         url=job_dict["url"],
@@ -157,8 +174,10 @@ class ScraperBase:
                 f"""
 Job Details for {job["url"]}
 Title: {job["title"]}
+Role: {job["role"]}
 Company: {job["company"]}
 Location: {job["location"]}
+Required Experience: {job.get("required_experience")}
 Description: {job["description"]}
 Posted At: {job["posted_at"]}
 Source: {self.source}
@@ -185,6 +204,7 @@ Salary From Levels FYI: {job.get("salary_from_levels_fyi", False)}
         )
         save_jobs_start_time = time.time()
         self.save_to_db(jobs)
+        self.add_job_details_to_collection(jobs)
         logger.info(
             f"Saved {len(jobs)} job listings to the database in {time.time() - save_jobs_start_time:.2f} seconds."
         )

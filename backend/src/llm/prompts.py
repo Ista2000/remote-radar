@@ -7,6 +7,7 @@ Your job is to extract from the job posting and present the following keys and v
 `description`, `required_experience`, `salary_min`, `salary_max`, `salary_currency`, `salary_from_levels_fyi`.
 Content of the `description` should be as is but in html with some formatting to prettify it using <hX>, <b>, <em> tags.
 `salary_from_levels_fyi` is a boolean indicating whether salary was available at source was was fetched from levels.fyi.
+`required_experience` is the minimum number of years of experience required for the job.
 If the salary information is not available then use the following data (data may be null) then set them as null:
 ### SCRAPED TEXT FROM LEVELS.FYI:
 {levels_fyi_page_data}

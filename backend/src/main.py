@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .database import engine
 from .deps import get_db
 from .models import Base
-from .routers import auth
+from .routers import auth, job
 from .scrapers.scraper_factory import ScraperFactory
 
 logger = logging.getLogger("uvicorn")
@@ -64,3 +64,4 @@ async def root():
 
 
 app.include_router(auth.router)  # Include the auth router
+app.include_router(job.router)  # Include the job router
