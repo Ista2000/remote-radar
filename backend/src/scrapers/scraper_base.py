@@ -1,4 +1,6 @@
 import logging
+from sqlite3 import IntegrityError
+import traceback
 import requests
 import time
 from abc import abstractmethod
@@ -6,17 +8,20 @@ from bs4 import BeautifulSoup
 from typing import Dict, List
 
 from ..deps import db_dependency
+from ..llm.llm import LLM
 from ..models import Job
 
 logger = logging.getLogger("uvicorn")
 
 
 class ScraperBase:
-    def __init__(self, source: str, db: db_dependency):
+    def __init__(self, source: str, role: str, db: db_dependency):
         self.source = source
+        self.role = role
         self.db = db
         self.urls: List[str] = []
         self.job_listings: List[Dict[str, str]] = []
+        self.llm = LLM()
 
     @abstractmethod
     def fetch_job_listing_urls(self) -> None:
@@ -48,26 +53,51 @@ class ScraperBase:
         """Parse the posted date from the soup object fetched from the URL."""
         pass
 
-    def parse_or_fetch_salary(self, soup: BeautifulSoup) -> dict[str, str]:
-        """Parse salary information from the soup object fetched from the URL."""
-        return {}
+    def infer_job_details(
+        self, page_data: str, company: str, location: str
+    ) -> dict[str, str]:
+        """Infer job details using LLM."""
+        try:
+            return self.llm.extract_job_from_page_data(
+                page_data=page_data,
+                source=self.source,
+                company=company,
+                role=self.role,
+                location=location,
+            )
+        except Exception as e:
+            logger.error(f"Error inferring job details: {e}")
+            return {}
 
     def parse_job_details(self, url):
+        logger.info(f"Parsing job details from {url}...")
         try:
             headers = {"User-Agent": "Mozilla/5.0"}
             response = requests.get(url, headers=headers)
             soup = BeautifulSoup(response.text, "html.parser")
-            return {
+            page_data = soup.find("div", class_="top-card-layout__card").get_text(
+                strip=True, separator=" "
+            )
+            page_data += soup.find(
+                "div", class_="description__text description__text--rich"
+            ).get_text(strip=True, separator=" ")
+            company = self.parse_job_company(soup)
+            location = self.parse_job_location(soup)
+            job_details = {
+                **self.infer_job_details(page_data, company, location),
                 "title": self.parse_job_title(soup),
-                "company": self.parse_job_company(soup),
-                "location": self.parse_job_location(soup),
-                "description": self.parse_job_description(soup),
+                "company": company,
+                "location": location,
                 "url": url,
                 "posted_at": self.parse_posted_at(soup),
-                **self.parse_or_fetch_salary(soup),
             }
+            if "description" not in job_details:
+                job_details["description"] = self.parse_job_description(soup)
+            return job_details
         except Exception as e:
-            logger.error(f"Error parsing job details from {url}: {e}")
+            logger.error(
+                f"Error parsing job details from {url}: {traceback.format_exc()}"
+            )
             return {
                 "title": None,
                 "company": None,
@@ -82,28 +112,35 @@ class ScraperBase:
             }
 
     def save_to_db(self, jobs: list[dict]):
-        self.db.bulk_save_objects(
-            [
-                Job(
-                    title=job_dict["title"],
-                    company=job_dict["company"],
-                    location=job_dict["location"],
-                    description=job_dict["description"],
-                    url=job_dict["url"],
-                    source=self.source,
-                    salary_min=job_dict.get("salary_min"),
-                    salary_max=job_dict.get("salary_max"),
-                    salary_currency=job_dict.get("salary_currency", "USD"),
-                    salary_from_levels_fyi=job_dict.get(
-                        "salary_from_levels_fyi", False
-                    ),
-                    posted_at=job_dict["posted_at"],
-                )
-                for job_dict in jobs
-                if "title" in job_dict and job_dict["title"] is not None
-            ]
-        )
-        self.db.commit()
+        try:
+            self.db.bulk_save_objects(
+                [
+                    Job(
+                        title=job_dict["title"],
+                        company=job_dict["company"],
+                        location=job_dict["location"],
+                        description=job_dict["description"],
+                        url=job_dict["url"],
+                        source=self.source,
+                        salary_min=job_dict.get("salary_min"),
+                        salary_max=job_dict.get("salary_max"),
+                        salary_currency=job_dict.get("salary_currency", "USD"),
+                        salary_from_levels_fyi=job_dict.get(
+                            "salary_from_levels_fyi", False
+                        ),
+                        posted_at=job_dict["posted_at"],
+                    )
+                    for job_dict in jobs
+                    if "title" in job_dict and job_dict["title"] is not None
+                ]
+            )
+            self.db.commit()
+        except IntegrityError as e:
+            logger.error(f"Integrity error while saving to DB: {e}")
+            self.db.rollback()
+        except Exception as e:
+            logger.error(f"Error while saving to DB: {e}")
+            self.db.rollback()
 
     def log_jobs(self, jobs: list[dict]):
         for job in jobs:
@@ -127,10 +164,19 @@ Salary From Levels FYI: {job.get("salary_from_levels_fyi", False)}
         """Main method to run the scraper."""
         start_time = time.time()
         self.fetch_job_listing_urls()
+        logger.info(
+            f"Fetched {len(self.urls)} job listings in {time.time() - start_time:.2f} seconds."
+        )
+        parse_jobs_start_time = time.time()
         jobs = [
             self.parse_job_details(job_listing_url) for job_listing_url in self.urls
         ]
-        self.log_jobs(jobs)
-        # self.save_to_db(jobs)
-        end_time = time.time()
-        logger.info(f"Scraping completed in {end_time - start_time:.2f} seconds.")
+        logger.info(
+            f"Parsed {len(jobs)} job listings in {time.time() - parse_jobs_start_time:.2f} seconds."
+        )
+        save_jobs_start_time = time.time()
+        self.save_to_db(jobs)
+        logger.info(
+            f"Saved {len(jobs)} job listings to the database in {time.time() - save_jobs_start_time:.2f} seconds."
+        )
+        logger.info(f"Scraping completed in {time.time() - start_time:.2f} seconds.")

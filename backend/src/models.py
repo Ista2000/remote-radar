@@ -37,6 +37,7 @@ class Job(Base):
     description = Column(Text)
     url = Column(String, unique=True, nullable=False)
     source = Column(String, nullable=False)
+    role = Column(String, nullable=False)
 
     salary_min = Column(Integer)
     salary_max = Column(Integer)

@@ -10,8 +10,8 @@ logger = logging.getLogger("uvicorn")
 
 
 class LinkedInScraper(ScraperBase):
-    def __init__(self, db, role="software engineer", num_jobs=5):
-        super().__init__(source="LinkedIn", db=db)
+    def __init__(self, db, role="software engineer", num_jobs=2):
+        super().__init__(source="LinkedIn", role=role, db=db)
         self.role = role
         self.num_jobs = num_jobs
 
@@ -19,18 +19,21 @@ class LinkedInScraper(ScraperBase):
         logger.info("Fetching job listings from LinkedIn...")
         try:
             headers = {"User-Agent": "Mozilla/5.0"}
-            url = f"https://www.linkedin.com/jobs/search/?keywords={self.role}&f_WT=2&position=1&pageNum=0"
+            for page_num in range(0, 1):
+                url = f"https://www.linkedin.com/jobs/search/?keywords={self.role}&f_WT=2&position=1&pageNum={page_num}"
 
-            response = requests.get(url, headers=headers)
-            soup = BeautifulSoup(response.text, "html.parser")
+                response = requests.get(url, headers=headers)
+                soup = BeautifulSoup(response.text, "html.parser")
 
-            for job_card in soup.select("ul.jobs-search__results-list li"):
-                link_elem = job_card.find("a", href=True)
-                if link_elem is not None:
-                    self.urls.append(
-                        "https://www.linkedin.com/"
-                        + "/".join(link_elem["href"].split("?")[0].split("/")[3:])
-                    )
+                for job_card in soup.select("ul.jobs-search__results-list li"):
+                    link_elem = job_card.find("a", href=True)
+                    if link_elem is not None:
+                        self.urls.append(
+                            "https://www.linkedin.com/"
+                            + "/".join(link_elem["href"].split("?")[0].split("/")[3:])
+                        )
+                        if len(self.urls) >= self.num_jobs:
+                            break
                 if len(self.urls) >= self.num_jobs:
                     break
         except Exception as e:
