@@ -1,10 +1,13 @@
 import logging
 from contextlib import asynccontextmanager
+import os
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
+from .constants import STATIC_DIR_PATH
 from .database import engine
 from .deps import get_db
 from .models import Base
@@ -45,6 +48,9 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+os.makedirs(STATIC_DIR_PATH, exist_ok=True)
+app.mount("/static", StaticFiles(directory=STATIC_DIR_PATH), name="static")
 
 Base.metadata.create_all(bind=engine)  # Create database tables
 

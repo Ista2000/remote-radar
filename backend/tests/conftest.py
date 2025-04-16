@@ -46,8 +46,6 @@ def db_with_user(db):
         receive_email_alerts=False,
         is_admin=False,
         resume_url=None,
-        resume_text=None,
-        resume_parsed=None,
     )
     db.add(user)
     db.commit()

@@ -24,7 +24,7 @@
 - **Scraping**: BeautifulSoup
 - **Scheduling**: APScheduler
 - **ORM**: SQLAlchemy
-- **AI**: Langchain + Groq (LLaMA 3 models)
+- **AI**: Langchain + Groq (LLaMA 3 models) + ChromaDB
 - **Dev tools**: Poetry, MyPy, Black, Pytest
 
 ---
@@ -97,6 +97,7 @@ remote-radar/
 │   │   ├── database.py                    # Database configuration and session management
 │   │   ├── models.py                      # SQLAlchemy models for database tables
 │   │   ├── deps.py                        # Dependency injection for FastAPI routes
+│   │   ├── utils.py                       # Utility methods (includes Util methods used for tests as well)
 │   │   ├── scrapers/                      # Scrapers for fetching job listings
 │   │   ├── routers/                       # API route handlers
 │   │   ├── llm/                           # LLM-related utilities and integrations
@@ -140,7 +141,7 @@ This project is licensed under the [MIT License](./LICENSE).
 
 ## 🤝 Contributing
 
-Feel free to open issues or PRs if you want to improve scraping coverage, add new features, or optimize the LLM integrations.
+Feel free to open issues or PRs if you want to improve scraping coverage, add new features, add new scrapers or optimize the LLM integrations.
 
 ---
 

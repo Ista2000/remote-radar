@@ -48,8 +48,8 @@ def search_jobs(
         for job in job_collection.query(
             query_texts=[(role + " " + search_query).strip()],
             n_results=5,
-            include=["metadatas"],
-        )["metadatas"][0]
+            include=[],
+        )["ids"][0]
     ]
     ordering = case({val: idx for idx, val in enumerate(job_urls)}, value=Job.url)
     # Query jobs table for job listings with given

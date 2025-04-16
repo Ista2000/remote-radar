@@ -23,8 +23,7 @@ class User(Base):
     is_admin = Column(Boolean, default=False)
 
     resume_url = Column(String)  # Path or S3 URL to uploaded resume
-    resume_text = Column(String)  # Parsed plain text of the resume
-    resume_parsed = Column(String)  # Structured JSON (skills, education, etc.)
+    resume_text = Column(String)
 
 
 class Job(Base):

@@ -80,7 +80,6 @@ class ScraperBase:
                     job_detail["title"] + job_detail["description"]
                     for job_detail in job_details
                 ],
-                metadatas=[{"url": job_detail["url"]} for job_detail in job_details],
                 ids=[job_detail["url"] for job_detail in job_details],
             )
         except Exception as e:
