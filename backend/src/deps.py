@@ -49,13 +49,13 @@ async def get_current_user(token: oauth2_bearer_dependency):
     """Dependency that retrieves the current user from the token"""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = str(payload.get("sub", ""))
-        if username == "":
+        email: str = str(payload.get("sub", ""))
+        if email == "":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid authentication credentials",
             )
-        return {"username": username}
+        return {"email": email}
     except JWTError:
         logger.error(
             f"Error while trying to verify user with token {token}: {traceback.format_exc()}"

@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from langchain_core.output_parsers import PydanticOutputParser, JsonOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain_groq import ChatGroq
+from groq import RateLimitError
 from pydantic import BaseModel, Field
 
 from ..scrapers.levels_fyi import scrape_levels_fyi
@@ -70,9 +71,12 @@ class LLM:
                     }
                 )
                 return response.model_dump()
+            except RateLimitError as e:
+                logger.error(f"Error extracting job details: {e}")
+                continue
             except Exception:
                 logger.error(f"Error extracting job details: {traceback.format_exc()}")
-                continue
+                return {}
         return {}
 
     def extract_skills_from_resume(
@@ -81,7 +85,6 @@ class LLM:
         """Extract skills from resume"""
         for llm in self.llms:
             try:
-                parser = JsonOutputParser()
                 return (
                     PromptTemplate(template=EXTRACT_KEYWORDS_FROM_RESUME_TEMPLATE)
                     | llm
@@ -89,9 +92,12 @@ class LLM:
                 ).invoke(
                     {"resume_data": resume_data, "roles": "\n".join(preferred_roles)}
                 )
+            except RateLimitError as e:
+                logger.error(f"Error extracting keywords from user resume data: {e}")
+                continue
             except Exception:
                 logger.error(
                     f"Error extracting keywords from user resume data: {traceback.format_exc()}"
                 )
-                continue
+                return {}
         return {}
