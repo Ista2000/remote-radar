@@ -4,7 +4,7 @@ import os
 import traceback
 from typing import Optional
 from dotenv import load_dotenv
-from langchain_core.output_parsers import PydanticOutputParser
+from langchain_core.output_parsers import PydanticOutputParser, JsonOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain_groq import ChatGroq
 from pydantic import BaseModel, Field
@@ -54,32 +54,44 @@ class LLM:
         self,
         page_data: str,
         source: str,
-        company: str,
-        role: str,
-        location: str,
     ) -> dict[str, str]:
         """Extract job details from the url."""
         for llm in self.llms:
             try:
-                parser = PydanticOutputParser(pydantic_object=Job)
-                chain_extract = (
-                    PromptTemplate(template=EXTRACTJOB_FROM_PAGE_DATA_TEMPLATE)
+                chain = (
+                    PromptTemplate(template=EXTRACT_JOB_FROM_PAGE_DATA_TEMPLATE)
                     | llm
-                    | parser
+                    | PydanticOutputParser(pydantic_object=Job)
                 )
-                response: Job = chain_extract.invoke(
+                response: Job = chain.invoke(
                     {
                         "page_data": page_data,
-                        "levels_fyi_page_data": scrape_levels_fyi(
-                            company=company,
-                            role=role,
-                            location=location,
-                        ),
                         "source": source,
                     }
                 )
                 return response.model_dump()
             except Exception:
                 logger.error(f"Error extracting job details: {traceback.format_exc()}")
+                continue
+        return {}
+
+    def extract_skills_from_resume(
+        self, resume_data: str, preferred_roles: list[str]
+    ) -> dict[str, str]:
+        """Extract skills from resume"""
+        for llm in self.llms:
+            try:
+                parser = JsonOutputParser()
+                return (
+                    PromptTemplate(template=EXTRACT_KEYWORDS_FROM_RESUME_TEMPLATE)
+                    | llm
+                    | JsonOutputParser()
+                ).invoke(
+                    {"resume_data": resume_data, "roles": "\n".join(preferred_roles)}
+                )
+            except Exception:
+                logger.error(
+                    f"Error extracting keywords from user resume data: {traceback.format_exc()}"
+                )
                 continue
         return {}

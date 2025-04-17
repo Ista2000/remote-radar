@@ -1,6 +1,10 @@
 import json
+import logging
 import os
 from datetime import datetime, timedelta, timezone
+import re
+from sqlite3 import DataError
+import traceback
 from typing import Annotated, Any, Optional
 
 from dotenv import load_dotenv
@@ -10,15 +14,18 @@ from fastapi.security import OAuth2PasswordRequestForm
 from jose import jwt
 import pdfplumber
 from pydantic import BaseModel
+import sqlalchemy
+import sqlalchemy.exc
 from sqlalchemy.orm import Session
 
 from ..utils import hash_password, verify_password
 from ..constants import DEFAULT_TOKEN_EXPIRE_MINUTES, STATIC_DIR_PATH
-from ..deps import db_dependency
+from ..deps import db_dependency, llm
 from ..models import User
 
 load_dotenv()
 
+logger = logging.getLogger("uvicorn")
 
 router = APIRouter(
     prefix="/auth",
@@ -101,34 +108,85 @@ async def create_user(
 
             # Parse the resume text
             with pdfplumber.open(resume_file_path) as pdf:
-                resume_text = " ".join(page.extract_text() for page in pdf.pages)
+                resume_text = re.sub(
+                    r"[\n\t\r]+",
+                    " ",
+                    "\n".join(page.extract_text() for page in pdf.pages),
+                )
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to process the resume: {str(e)}",
             )
+    if resume_text is not None and len(user_obj.preferred_roles) > 0:
+        resume_text = json.dumps(
+            llm.extract_skills_from_resume(resume_text, user_obj.preferred_roles)
+        )
+    else:
+        resume_text = None
+    try:
+        db_user = User(
+            email=user_obj.email,
+            hashed_password=hashed_password,
+            full_name=user_obj.full_name,
+            experience_years=user_obj.experience_years,
+            preferred_roles=json.dumps(user_obj.preferred_roles),
+            preferred_locations=json.dumps(user_obj.preferred_locations),
+            preferred_sources=json.dumps(user_obj.preferred_sources),
+            receive_email_alerts=user_obj.receive_email_alerts,
+            is_admin=user_obj.is_admin,
+            resume_url=(
+                os.path.join("static", user_obj.email, resume.filename)
+                if resume
+                else None
+            ),
+            resume_text=resume_text,
+        )
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        user_dict: dict = jsonable_encoder(db_user)
+        user_dict.pop("hashed_password", None)
+        return user_dict
+    except sqlalchemy.exc.IntegrityError as e:
+        db.rollback()
+        error_message = str(e.orig)
+        logger.error(f"Error while trying to create user: {traceback.format_exc()}")
+        if "UNIQUE constraint failed" in error_message:
+            # Example: "UNIQUE constraint failed: users.email"
+            match = re.search(r"UNIQUE constraint failed: (\w+)\.(\w+)", error_message)
+            if match:
+                _, column = match.groups()
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"A user with this {column} already exists.",
+                )
 
-    db_user = User(
-        email=user_obj.email,
-        hashed_password=hashed_password,
-        full_name=user_obj.full_name,
-        experience_years=user_obj.experience_years,
-        preferred_roles=json.dumps(user_obj.preferred_roles),
-        preferred_locations=json.dumps(user_obj.preferred_locations),
-        preferred_sources=json.dumps(user_obj.preferred_sources),
-        receive_email_alerts=user_obj.receive_email_alerts,
-        is_admin=user_obj.is_admin,
-        resume_url=(
-            os.path.join("static", user_obj.email, resume.filename) if resume else None
-        ),
-        resume_text=resume_text,
-    )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    user_dict: dict = jsonable_encoder(db_user)
-    user_dict.pop("hashed_password", None)
-    return user_dict
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to create user due to a database constraint.",
+        )
+    except DataError as e:
+        db.rollback()
+        logger.error(f"Error while trying to create user: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid data format or value provided.",
+        )
+    except sqlalchemy.exc.SQLAlchemyError as e:
+        db.rollback()
+        logger.error(f"Error while trying to create user: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="A database error occurred. Please try again later.",
+        )
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error while trying to create user: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while creating the user.",
+        )
 
 
 @router.post("/token", response_model=Token)

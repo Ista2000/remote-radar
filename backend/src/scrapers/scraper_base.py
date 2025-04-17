@@ -64,9 +64,6 @@ class ScraperBase:
             return llm.extract_job_from_page_data(
                 page_data=page_data,
                 source=self.source,
-                company=company,
-                role=self.role,
-                location=location,
             )
         except Exception:
             logger.error(f"Error inferring job details: {traceback.format_exc()}")
