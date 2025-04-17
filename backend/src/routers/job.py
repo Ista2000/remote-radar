@@ -1,6 +1,7 @@
 import json
+import logging
 from typing import Optional
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import case
 
 from ..deps import db_dependency, job_collection, user_dependency
@@ -11,18 +12,27 @@ router = APIRouter(
     tags=["job"],
 )
 
+logger = logging.getLogger("uvicorn")
+
 
 @router.get("/")
+def get_job(db: db_dependency, url: str):
+    """Get job from url"""
+    try:
+        return db.query(Job).filter(Job.url == url).first[0]
+    except Exception as e:
+        logger.error(f"Error while fetching job with url {url}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Failed to fetch job at {url}",
+        )
+
+
+@router.get("/recommended")
 def recommended_jobs(
     user: user_dependency, db: db_dependency, role: Optional[str] = None
 ):
-    """
-    Get all jobs.
-
-    :param user: The current user.
-    :param db: The database session.
-    :return: A list of all job listings.
-    """
+    """Get all jobs"""
     # Query the jobs table for all job listings
     resume_text_json = (
         db.query(User.resume_text).filter(User.email == user["email"]).first()[0]
@@ -65,13 +75,7 @@ def search_jobs(
     role: str = "",
     experience_years: Optional[int] = None,
 ):
-    """
-    Search for jobs based on the provided search query and optional filters.
-
-    :param form_data: The search query and optional filters.
-    :param db: The database session.
-    :return: A list of job listings matching the search criteria.
-    """
+    """Search for jobs based on the provided search query and optional filters"""
 
     # Extract job URLs from the job collection
     job_urls = list(
