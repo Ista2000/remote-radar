@@ -13,13 +13,13 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import jwt
 import pdfplumber
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field, ValidationError, field_validator
 import sqlalchemy
 import sqlalchemy.exc
 from sqlalchemy.orm import Session
 
 from ..utils import hash_password, verify_password
-from ..constants import DEFAULT_TOKEN_EXPIRE_MINUTES, STATIC_DIR_PATH
+from ..constants import DEFAULT_TOKEN_EXPIRE_MINUTES, LOCATIONS, ROLES, SOURCES, STATIC_DIR_PATH
 from ..deps import db_dependency, llm, user_dependency
 from ..models import User
 
@@ -36,21 +36,9 @@ SECRET_KEY = str(os.getenv("AUTH_SECRET_KEY", ""))
 ALGORITHM = str(os.getenv("AUTH_ALGORITHM", ""))
 
 
-class UserCreateRequest(BaseModel):
-    email: str
-    password: str
-    full_name: str
-    experience_years: Optional[int] = None
-    preferred_roles: list[str] = []
-    preferred_locations: list[str] = []
-    preferred_sources: list[str] = []
-    receive_email_alerts: bool = False
-    is_admin: bool = False
-
-
 class UserModel(BaseModel):
     id: int
-    email: str
+    email: EmailStr
     full_name: str
     experience_years: Optional[int]
     preferred_roles: str
@@ -58,6 +46,58 @@ class UserModel(BaseModel):
     preferred_sources: str
     receive_email_alerts: bool
     resume_url: Optional[str]
+
+
+class UserCreateRequest(BaseModel):
+    email: str
+    password: str
+    repeat_password: str
+    full_name: str
+    experience_years: Optional[int] = None
+    preferred_roles: list[str] = []
+    preferred_locations: list[str] = []
+    preferred_sources: list[str] = []
+    receive_email_alerts: bool = False
+
+    @field_validator("password")
+    def validate_password(cls, password: str):
+        if len(password) < 8:
+            raise ValueError("Password must be at least 8 characters long.")
+        if not re.search(r"[A-Z]", password):
+            raise ValueError("Password must include at least one uppercase letter.")
+        if not re.search(r"[a-z]", password):
+            raise ValueError("Password must include at least one lowercase letter.")
+        if not re.search(r"[0-9]", password):
+            raise ValueError("Password must include at least one digit.")
+        return password
+
+    @field_validator("repeat_password")
+    def passwords_match(cls, repeat_password, values):
+        if "password" in values and repeat_password != values["password"]:
+            raise ValueError("Passwords do not match.")
+        return repeat_password
+
+    @field_validator("preferred_roles")
+    def validate_preferred_roles(cls, v: list[str]):
+        invalid_roles = [role for role in v if role not in ROLES]
+        if invalid_roles:
+            raise ValueError(f"Invalid roles: {', '.join(invalid_roles)}")
+        return v
+
+    @field_validator("preferred_locations")
+    def validate_preferred_locations(cls, v: str):
+        invalid_locations = [location for location in v if location not in LOCATIONS]
+        if invalid_locations:
+            raise ValueError(f"Invalid roles: {', '.join(invalid_locations)}")
+        return v
+
+    @field_validator("preferred_sources")
+    def validate_preferred_sources(cls, v: str):
+        invalid_sources = [source for source in v if source not in SOURCES]
+        if invalid_sources:
+            raise ValueError(f"Invalid roles: {', '.join(invalid_sources)}")
+        return v
+
 
 
 class Token(BaseModel):
@@ -99,16 +139,17 @@ def get_myself(email: user_dependency, db: db_dependency):
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_user(
-    user: Annotated[str, Form()], db: db_dependency, resume: UploadFile = File(None)
+    user: Annotated[str, Form()], db: db_dependency, resume: UploadFile | str = File(None)
 ):
     """Create a new user"""
+    if resume is str:
+        resume = File(None)
     try:
-        user_data = json.loads(user)
-        user_obj = UserCreateRequest(**user_data)
-    except json.JSONDecodeError as e:
+        user_obj = UserCreateRequest.model_validate_json(user)
+    except ValidationError as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=e.msg,
+            detail=json.loads(e.json()),
         )
     hashed_password = hash_password(user_obj.password)
     resume_text = None
