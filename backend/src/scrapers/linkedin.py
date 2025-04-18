@@ -11,7 +11,7 @@ logger = logging.getLogger("uvicorn")
 
 
 class LinkedInScraper(ScraperBase):
-    def __init__(self, db, role="software engineer", num_jobs=5):
+    def __init__(self, db, role, num_jobs=5):
         super().__init__(source="LinkedIn", role=role, db=db)
         self.num_jobs = num_jobs
 

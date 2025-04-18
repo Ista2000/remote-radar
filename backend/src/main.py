@@ -7,11 +7,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from .constants import STATIC_DIR_PATH
+from .constants import LOCATIONS, STATIC_DIR_PATH
 from .database import engine
-from .deps import get_db
+from .deps import get_db, location_collection
 from .models import Base
-from .routers import auth, job
+from .routers import auth, job, rls
 from .scrapers.scraper_factory import ScraperFactory
 
 logger = logging.getLogger("uvicorn")
@@ -20,6 +20,13 @@ logger = logging.getLogger("uvicorn")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager for the FastAPI app"""
+    logger.info("Adding locations in ChromaDB collection")
+    if len(LOCATIONS) > 0:
+        location_list = [f"{city}, {country}" for country, cities in LOCATIONS.items() for city in cities]
+        location_collection.add(
+            documents=location_list,
+            ids=location_list,
+        )
     # scheduler = BackgroundScheduler()
     # logger.info("Starting background jobs scheduler...")
     # db_gen = get_db()
@@ -71,3 +78,4 @@ async def root():
 
 app.include_router(auth.router)  # Include the auth router
 app.include_router(job.router)  # Include the job router
+app.include_router(rls.router)  # Include the rls router

@@ -1,3 +1,4 @@
+from ..constants import ROLES
 from .linkedin import LinkedInScraper
 from .scraper_base import ScraperBase
 
@@ -8,8 +9,8 @@ class ScraperFactory:
     """
 
     def __init__(self, db) -> None:
-        self.scrappers: dict[str, ScraperBase] = {
-            "linkedin": LinkedInScraper(db),
+        self.scrapers: dict[str, list[ScraperBase]] = {
+            "LinkedIn": list(LinkedInScraper(db, role) for role in ROLES),
             # Add other scrappers here as needed
         }
 
@@ -20,10 +21,10 @@ class ScraperFactory:
         :param source: The source for which to create a scraper.
         :return: An instance of the corresponding scraper class.
         """
-        if source not in self.scrappers:
+        if source not in self.scrapers:
             raise ValueError(f"Scraper for {source} not found.")
 
-        return self.scrappers[source]
+        return self.scrapers[source]
 
     def get_all_scrapers(self) -> list[ScraperBase]:
         """
@@ -31,4 +32,4 @@ class ScraperFactory:
 
         :return: A list of all available scrapers.
         """
-        return list(self.scrappers.values())
+        return list(scraper for scrapers in self.scrapers.values() for scraper in scrapers)

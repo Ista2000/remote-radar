@@ -7,7 +7,7 @@ from abc import abstractmethod
 from bs4 import BeautifulSoup
 from typing import Dict, List, Optional
 
-from ..deps import db_dependency, job_collection, llm
+from ..deps import db_dependency, job_collection, location_collection, llm
 from ..models import Job
 
 logger = logging.getLogger("uvicorn")
@@ -95,7 +95,11 @@ class ScraperBase:
                 "div", class_="description__text description__text--rich"
             ).get_text(strip=True, separator=" ")
             company = self.parse_job_company(soup)
-            location = self.parse_job_location(soup)
+            location = str(location_collection.query(
+                query_texts=[self.parse_job_location(soup)],
+                n_results=1,
+                include=[]
+            )["ids"][0])
             job_details = {
                 **self.infer_job_details(page_data, company, location),
                 "title": self.parse_job_title(soup),
