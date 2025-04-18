@@ -13,7 +13,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import jwt
 import pdfplumber
-from pydantic import BaseModel, EmailStr, Field, ValidationError, field_validator
+from pydantic import BaseModel, EmailStr, Field, ValidationError, ValidationInfo, field_validator
 import sqlalchemy
 import sqlalchemy.exc
 from sqlalchemy.orm import Session
@@ -62,20 +62,29 @@ class UserCreateRequest(BaseModel):
     @field_validator("password")
     def validate_password(cls, password: str):
         if len(password) < 8:
-            raise ValueError("Password must be at least 8 characters long.")
+            raise ValueError("Password must be at least 8 characters long")
         if not re.search(r"[A-Z]", password):
-            raise ValueError("Password must include at least one uppercase letter.")
+            raise ValueError("Password must include at least one uppercase letter")
         if not re.search(r"[a-z]", password):
-            raise ValueError("Password must include at least one lowercase letter.")
+            raise ValueError("Password must include at least one lowercase letter")
         if not re.search(r"[0-9]", password):
-            raise ValueError("Password must include at least one digit.")
+            raise ValueError("Password must include at least one digit")
         return password
 
     @field_validator("repeat_password")
-    def passwords_match(cls, repeat_password, values):
-        if "password" in values and repeat_password != values["password"]:
+    def passwords_match(cls, repeat_password: str, info: ValidationInfo):
+        password = info.data.get("password")
+        if password and repeat_password != password:
             raise ValueError("Passwords do not match.")
         return repeat_password
+
+    @field_validator("full_name")
+    def validate_full_name(cls, v: str):
+        if len(v) == 0:
+            raise ValueError("Field required")
+        if ' ' not in v:
+            raise ValueError("Both first name and last name is required")
+        return v
 
     @field_validator("preferred_roles")
     def validate_preferred_roles(cls, v: list[str]):
