@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 
 from ..utils import hash_password, verify_password
 from ..constants import DEFAULT_TOKEN_EXPIRE_MINUTES, STATIC_DIR_PATH
-from ..deps import db_dependency, llm
+from ..deps import db_dependency, llm, user_dependency
 from ..models import User
 
 load_dotenv()
@@ -48,9 +48,22 @@ class UserCreateRequest(BaseModel):
     is_admin: bool = False
 
 
+class UserModel(BaseModel):
+    id: int
+    email: str
+    full_name: str
+    experience_years: Optional[int]
+    preferred_roles: str
+    preferred_locations: str
+    preferred_sources: str
+    receive_email_alerts: bool
+    resume_url: Optional[str]
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str
+    user: UserModel
 
 
 def authenticate_user(username: str, password: str, db: Session) -> Optional[User]:
@@ -72,6 +85,16 @@ def create_access_token(
     expire = datetime.now(timezone.utc) + expires_delta
     to_encode.update({"exp": int(expire.timestamp())})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+@router.get("/", response_model=UserModel)
+def get_myself(email: user_dependency, db: db_dependency):
+    user: User = db.query(User).filter(User.email == email["email"]).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not authenticated"
+        )
+    return user
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
@@ -201,4 +224,4 @@ def login_for_access_token(
             detail="Incorrect username or password",
         )
     access_token = create_access_token(email=user.email)
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer", "user": user}

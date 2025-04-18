@@ -20,26 +20,26 @@ logger = logging.getLogger("uvicorn")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager for the FastAPI app"""
-    scheduler = BackgroundScheduler()
-    logger.info("Starting background jobs scheduler...")
-    db_gen = get_db()
-    db = next(db_gen)  # Get the database session
-    for scraper in ScraperFactory(db).get_all_scrapers():
-        scraper.run()  # Initial run to fetch data immediately
-        # Schedule the scraper to run every 6 hours
-        scheduler.add_job(
-            scraper.run,
-            trigger="interval",
-            seconds=60 * 60 * 6,  # Run every 6 hours
-        )
-    try:
-        next(db_gen)  # Ensure the database session is yielded
-    except StopIteration:
-        pass
-    scheduler.start()
+    # scheduler = BackgroundScheduler()
+    # logger.info("Starting background jobs scheduler...")
+    # db_gen = get_db()
+    # db = next(db_gen)  # Get the database session
+    # for scraper in ScraperFactory(db).get_all_scrapers():
+    #     scraper.run()  # Initial run to fetch data immediately
+    #     # Schedule the scraper to run every 6 hours
+    #     scheduler.add_job(
+    #         scraper.run,
+    #         trigger="interval",
+    #         seconds=60 * 60 * 6,  # Run every 6 hours
+    #     )
+    # try:
+    #     next(db_gen)  # Ensure the database session is yielded
+    # except StopIteration:
+    #     pass
+    # scheduler.start()
     yield
-    logger.info("Shutting down background jobs scheduler...")
-    scheduler.shutdown()
+    # logger.info("Shutting down background jobs scheduler...")
+    # scheduler.shutdown()
 
 
 app = FastAPI(
@@ -56,7 +56,7 @@ Base.metadata.create_all(bind=engine)  # Create database tables
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["htpp://localhost:3000"],  # Allow requests from this origin
+    allow_origins=["http://localhost:3000"],  # Allow requests from this origin
     allow_credentials=True,
     allow_methods=["*"],  # Allow all methods
     allow_headers=["*"],  # Allow all headers
