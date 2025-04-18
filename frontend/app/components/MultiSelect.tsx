@@ -1,7 +1,7 @@
 "use client"
 import { SmallCloseIcon } from "@chakra-ui/icons";
 import { Container, Select, SelectProps, Tag, TagLabel, TagLeftIcon } from "@chakra-ui/react";
-import { MouseEventHandler, ChangeEvent, useState } from "react";
+import { useState } from "react";
 
 interface MultiSelectProps extends SelectProps {
   onMultiSelectChange?: (selected: string[]) => void;

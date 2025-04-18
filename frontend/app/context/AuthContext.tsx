@@ -28,6 +28,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (window.location.pathname === "/auth") {
           return;
         }
+        console.log(e);
         router.push("/auth");
         toast({
           position: "top-right",

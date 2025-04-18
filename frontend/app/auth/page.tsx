@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { AuthProvider } from "../context/AuthContext";
 import Login from "./Login";
-import { Box, Divider, Flex, HStack, Text, useRadio, useRadioGroup, UseRadioProps } from "@chakra-ui/react";
+import { Box, Divider, Flex, Text, useRadio, useRadioGroup, UseRadioProps } from "@chakra-ui/react";
 import Signup from "./Signup";
 
 interface RadioCardProps extends UseRadioProps {

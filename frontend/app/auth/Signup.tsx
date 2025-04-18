@@ -57,9 +57,8 @@ const Signup = ({onSignupSuccess}: {onSignupSuccess: () => void}) => {
       e.preventDefault();
       setLoading(true);
       setError(null);
-      const {password_repeat, ...userData} = user;
       const formData = new FormData();
-      formData.append('user', JSON.stringify(userData));
+      formData.append('user', JSON.stringify(user));
       if (resume) {
         formData.append('resume', resume);
       }
@@ -191,7 +190,7 @@ const Signup = ({onSignupSuccess}: {onSignupSuccess: () => void}) => {
       <FormLabel htmlFor='email-alerts' mb='0'>
         Enable email alerts?
       </FormLabel>
-      <Switch id='email-alerts' onChange={e => setUser({...user, receive_email_alerts: !user.receive_email_alerts})} defaultChecked/>
+      <Switch id='email-alerts' onChange={() => setUser({...user, receive_email_alerts: !user.receive_email_alerts})} defaultChecked/>
     </FormControl>
 
     <Button colorScheme="teal" onClick={handleSubmit} isDisabled={loading}>
