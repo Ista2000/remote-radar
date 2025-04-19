@@ -49,7 +49,7 @@ class UserModel(BaseModel):
 
 
 class UserCreateRequest(BaseModel):
-    email: str
+    email: EmailStr
     password: str
     repeat_password: str
     full_name: str
@@ -207,7 +207,7 @@ async def create_user(
             preferred_locations=json.dumps(user_obj.preferred_locations),
             preferred_sources=json.dumps(user_obj.preferred_sources),
             receive_email_alerts=user_obj.receive_email_alerts,
-            is_admin=user_obj.is_admin,
+            is_admin=False,
             resume_url=(
                 os.path.join("static", user_obj.email, resume.filename)
                 if resume
