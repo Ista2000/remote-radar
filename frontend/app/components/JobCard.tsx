@@ -18,9 +18,10 @@ import {
   HStack,
   Icon,
   useColorModeValue,
+  Tooltip,
+  Link,
 } from "@chakra-ui/react";
 import { AtSignIcon, CalendarIcon, ExternalLinkIcon, InfoOutlineIcon, StarIcon, TimeIcon, ViewIcon } from "@chakra-ui/icons";
-import { Global } from "@emotion/react";
 
 export interface JobType {
     company: string;
@@ -51,7 +52,7 @@ const JobCard = ({ job }: JobCardProps) => {
   const cardBg = useColorModeValue("white", "gray.800");
   const descriptionBg = useColorModeValue("gray.50", "gray.700");
   const descriptionTextColor = useColorModeValue("gray.700", "gray.100");
-  console.log(job.description);
+  console.log(job);
   return (
     <>
       <Box
@@ -75,9 +76,10 @@ const JobCard = ({ job }: JobCardProps) => {
         <Text fontSize="md" color="gray.600">
           {job.company} · {job.location}
         </Text>
-        <Text fontSize="sm" color="gray.500" mt={1}>
-          {job.required_experience}+ yrs · {job.role} · {job.salary_currency} {job.salary_min} - {job.salary_max}
-        </Text>
+          <Text fontSize="sm" color="gray.500" mt={1}>
+            {job.required_experience}+ yrs · {job.role}
+            { job.salary_currency && job.salary_min && job.salary_max && ` · ${job.salary_currency} ${job.salary_min} - ${job.salary_max}` }
+          </Text>
         <Text fontSize="2xs" color="gray.500" mt={1}>
           From {job.source}
         </Text>
@@ -138,17 +140,24 @@ const JobCard = ({ job }: JobCardProps) => {
                       </HStack>
                     </Box>
                   </WrapItem>
-                  <WrapItem>
-                    <Box px={4} py={2} bg={cardBg} borderRadius="md" boxShadow="sm">
-                      <HStack>
-                        <Icon as={StarIcon} color="green.400" />
-                        <Text fontWeight="medium" color={textColor}>Salary:</Text>
-                        <Text color={textColor}>
-                          {job.salary_currency} {job.salary_min} - {job.salary_max}
-                        </Text>
-                      </HStack>
-                    </Box>
-                  </WrapItem>
+                  {job.salary_currency && job.salary_max && job.salary_min && (
+                    <WrapItem>
+                      <Box px={4} py={2} bg={cardBg} borderRadius="md" boxShadow="sm">
+                        <HStack>
+                          <Icon as={StarIcon} color="green.400" />
+                          <Text fontWeight="medium" color={textColor}>Salary:</Text>
+                          <Text color={textColor}>
+                            {job.salary_currency} {job.salary_min} - {job.salary_max}
+                          </Text>
+                          {job.salary_from_levels_fyi && (
+                            <Tooltip label="Salary information sourced from levels.fyi" hasArrow>
+                              <Link href="https://www.levels.fyi/" target="_blank"><Badge colorScheme="blue" ml={2}>levels.fyi</Badge></Link>
+                            </Tooltip>
+                          )}
+                        </HStack>
+                      </Box>
+                    </WrapItem>
+                  )}
                   <WrapItem>
                     <Box px={4} py={2} bg={cardBg} borderRadius="md" boxShadow="sm">
                       <HStack>
