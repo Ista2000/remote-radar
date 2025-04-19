@@ -3,6 +3,8 @@ from dateutil.relativedelta import relativedelta
 import bcrypt
 import re
 
+from .constants import LOCATION_GEO_IDS_FOR_LINKEDIN
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(
@@ -55,3 +57,6 @@ def get_posted_date(relative_date_str: str) -> datetime:
 
     # If no matching patterns, return the current time (Fallback case)
     return datetime.now()
+
+def get_normalized_locations_list_string():
+    return [f"{city}, {country}" for country, city_dict in LOCATION_GEO_IDS_FOR_LINKEDIN.items() for city in city_dict.keys()]

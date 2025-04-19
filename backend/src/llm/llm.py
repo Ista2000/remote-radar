@@ -16,8 +16,8 @@ from .prompts import *
 load_dotenv()
 
 GROQ_API_KEY = str(os.getenv("GROQ_API_KEY", ""))
-LLM_MODEL = json.loads(
-    str(os.getenv("LLM_MODEL", '["llama-3.1-70b-versatile", "llama-3.1-8b-instant"]'))
+LLM_MODELS = json.loads(
+    str(os.getenv("LLM_MODELS", '["llama-3.1-70b-versatile", "llama-3.1-8b-instant"]'))
 )
 
 logger = logging.getLogger("uvicorn")
@@ -36,6 +36,7 @@ class Job(BaseModel):
     salary_from_levels_fyi: bool = Field(
         "Did the salary need to be fetched from levels.fyi"
     )
+    remote: bool = Field("Is the job remotely available")
 
 
 class LLM:
@@ -48,7 +49,7 @@ class LLM:
                 groq_api_key=GROQ_API_KEY,
                 model_name=model_name,
             )
-            for model_name in LLM_MODEL
+            for model_name in LLM_MODELS
         ]
 
     def extract_job_from_page_data(
@@ -57,7 +58,7 @@ class LLM:
         source: str,
     ) -> dict[str, str]:
         """Extract job details from the url."""
-        for llm in self.llms:
+        for idx, llm in enumerate(self.llms):
             try:
                 chain = (
                     PromptTemplate(template=EXTRACT_JOB_FROM_PAGE_DATA_TEMPLATE)
@@ -72,7 +73,11 @@ class LLM:
                 )
                 return response.model_dump()
             except RateLimitError as e:
-                logger.error(f"Error extracting job details: {e}")
+                if idx == len(self.llms) - 1:
+                    logger.error(f"Rate limit hit for all models: {traceback.format_exc()}")
+                else:
+                    logger.warning(f"Rate limit hit for {LLM_MODELS[idx]}: {traceback.format_exc()}")
+                    logger.warning(f"Falling back to {LLM_MODELS[idx + 1]}")
                 continue
             except Exception:
                 logger.error(f"Error extracting job details: {traceback.format_exc()}")
@@ -93,7 +98,7 @@ class LLM:
                     {"resume_data": resume_data, "roles": "\n".join(preferred_roles)}
                 )
             except RateLimitError as e:
-                logger.error(f"Error extracting keywords from user resume data: {e}")
+                logger.error(f"Error extracting keywords from user resume data: {traceback.format_exc()}")
                 continue
             except Exception:
                 logger.error(

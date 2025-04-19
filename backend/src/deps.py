@@ -27,9 +27,6 @@ chromadb_client = chromadb.Client()
 job_collection = chromadb_client.create_collection(
     name="job_collection", metadata={"hnsw:space": "cosine"}
 )
-location_collection = chromadb_client.create_collection(
-    name="location_collection"
-)
 
 
 def get_db():

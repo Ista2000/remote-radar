@@ -51,7 +51,7 @@ AUTH_ALGORITHM=HS256
 API_URL=http://localhost:8000
 DATABASE_URL=Database URL to be used
 GROQ_API_KEY=Your groq API Key
-LLM_MODEL=list of Groq LLM models to be used in order of fallback
+LLM_MODELS=list of Groq LLM models to be used in order of fallback
 ```
 
 ### 4. Run the app

@@ -18,8 +18,8 @@ import sqlalchemy
 import sqlalchemy.exc
 from sqlalchemy.orm import Session
 
-from ..utils import hash_password, verify_password
-from ..constants import DEFAULT_TOKEN_EXPIRE_MINUTES, LOCATIONS, ROLES, SOURCES, STATIC_DIR_PATH
+from ..utils import get_normalized_locations_list_string, hash_password, verify_password
+from ..constants import DEFAULT_TOKEN_EXPIRE_MINUTES, ROLES, SOURCES, STATIC_DIR_PATH
 from ..deps import db_dependency, llm, user_dependency
 from ..models import User
 
@@ -94,17 +94,18 @@ class UserCreateRequest(BaseModel):
         return v
 
     @field_validator("preferred_locations")
-    def validate_preferred_locations(cls, v: str):
-        invalid_locations = [location for location in v if location not in LOCATIONS]
-        if invalid_locations:
-            raise ValueError(f"Invalid roles: {', '.join(invalid_locations)}")
+    def validate_preferred_locations(cls, v: list[str]):
+        all_valid_locations = get_normalized_locations_list_string()
+        invalid_locations = [location for location in v if location not in all_valid_locations]
+        if len(invalid_locations) > 0:
+            raise ValueError(f"Invalid locations: {', '.join(invalid_locations)}")
         return v
 
     @field_validator("preferred_sources")
-    def validate_preferred_sources(cls, v: str):
+    def validate_preferred_sources(cls, v: list[str]):
         invalid_sources = [source for source in v if source not in SOURCES]
         if invalid_sources:
-            raise ValueError(f"Invalid roles: {', '.join(invalid_sources)}")
+            raise ValueError(f"Invalid sources: {', '.join(invalid_sources)}")
         return v
 
 

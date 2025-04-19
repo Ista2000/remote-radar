@@ -5,9 +5,9 @@ import requests
 import time
 from abc import abstractmethod
 from bs4 import BeautifulSoup
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
-from ..deps import db_dependency, job_collection, location_collection, llm
+from ..deps import db_dependency, job_collection, llm
 from ..models import Job
 
 logger = logging.getLogger("uvicorn")
@@ -18,7 +18,7 @@ class ScraperBase:
         self.source = source
         self.role = role
         self.db = db
-        self.urls: List[str] = []
+        self.location_to_urls: Dict[str, list[str]] = {}
         self.job_listings: List[Dict[str, str]] = []
 
     @abstractmethod
@@ -82,7 +82,7 @@ class ScraperBase:
         except Exception as e:
             logger.error(f"Error adding job details to collection: {e}")
 
-    def parse_job_details(self, url):
+    def parse_job_details(self, url: str, location: str):
         logger.info(f"Parsing job details from {url}...")
         try:
             headers = {"User-Agent": "Mozilla/5.0"}
@@ -95,11 +95,6 @@ class ScraperBase:
                 "div", class_="description__text description__text--rich"
             ).get_text(strip=True, separator=" ")
             company = self.parse_job_company(soup)
-            location = str(location_collection.query(
-                query_texts=[self.parse_job_location(soup)],
-                n_results=1,
-                include=[]
-            )["ids"][0][0])
             job_details = {
                 **self.infer_job_details(page_data, company, location),
                 "title": self.parse_job_title(soup),
@@ -131,6 +126,7 @@ class ScraperBase:
                 "salary_currency": None,
                 "salary_from_levels_fyi": False,
                 "role": self.role,
+                "remote": None,
             }
 
     def save_to_db(self, jobs: list[dict]):
@@ -153,6 +149,7 @@ class ScraperBase:
                             "salary_from_levels_fyi", False
                         ),
                         posted_at=job_dict["posted_at"],
+                        remote=job_dict["remote"],
                     )
                     for job_dict in jobs
                     if "title" in job_dict and job_dict["title"] is not None
@@ -193,11 +190,14 @@ Salary From Levels FYI: {job.get("salary_from_levels_fyi", False)}
         start_time = time.time()
         self.fetch_job_listing_urls()
         logger.info(
-            f"Fetched {len(self.urls)} job listings in {time.time() - start_time:.2f} seconds."
+            f"Fetched {sum(len(urls) for urls in self.location_to_urls.values())} " +
+            f"job listings in {time.time() - start_time:.2f} seconds."
         )
         parse_jobs_start_time = time.time()
         jobs = [
-            self.parse_job_details(job_listing_url) for job_listing_url in self.urls
+            self.parse_job_details(job_listing_url, location)
+            for location, job_listing_urls in self.location_to_urls.items()
+            for job_listing_url in job_listing_urls
         ]
         logger.info(
             f"Parsed {len(jobs)} job listings in {time.time() - parse_jobs_start_time:.2f} seconds."

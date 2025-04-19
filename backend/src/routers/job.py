@@ -73,6 +73,7 @@ def search_jobs(
     location: str = "",
     source: str = "",
     role: str = "",
+    remote: Optional[str] = None,
     experience_years: Optional[int] = None,
 ):
     """Search for jobs based on the provided search query and optional filters"""
@@ -97,5 +98,7 @@ def search_jobs(
         job_listings = job_listings.filter(Job.role == role)
     if experience_years is not None:
         job_listings = job_listings.filter(Job.required_experience <= experience_years)
+    if remote is not None:
+        job_listings = job_listings.filter(Job.remote == remote)
     # Convert the query result to a list of dictionaries
     return job_listings.all()

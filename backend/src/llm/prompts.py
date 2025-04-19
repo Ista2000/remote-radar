@@ -4,13 +4,17 @@ EXTRACT_JOB_FROM_PAGE_DATA_TEMPLATE = """
 ### INSTRUCTION:
 The scraped text is from a job listing page from {source}.
 Your job is to extract from the job posting and present the following keys and values in JSON format:
-`description`, `required_experience`, `salary_min`, `salary_max`, `salary_currency`, `salary_from_levels_fyi`.
+`description`, `required_experience`, `salary_min`, `salary_max`, `salary_currency`, `salary_from_levels_fyi`, `remote`.
+`description` should clearly communicate everything about the job, responsibilities, required qualifications, preferred qualifications and necessary disclaimers.
 Modify the `description` as an HTML document by adding <h1> tags, A LOT OF <b>, <em> and <p> tags, and <ul> and <li> tags for listing but DO NOT CHANGE THE TEXT CONTENT.
-`salary_from_levels_fyi` is a boolean indicating whether salary was available at source was was fetched from levels.fyi.
+`salary_from_levels_fyi` should be false.
 `required_experience` is the minimum number of years of experience required for the job.
+`remote` is a Boolean value representing whether the job is available remotely.
 ### VALID JSON (NO PREAMBLE)
 ### DO NOT OUTPUT ANYTHING APART FROM JSON OBJECT
 """
+
+
 EXTRACT_KEYWORDS_FROM_RESUME_TEMPLATE = """
 ### USER RESUME DATA
 {resume_data}
