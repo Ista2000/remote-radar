@@ -51,9 +51,7 @@ const JobCard = ({ job }: JobCardProps) => {
   const cardBg = useColorModeValue("white", "gray.800");
   const descriptionBg = useColorModeValue("gray.50", "gray.700");
   const descriptionTextColor = useColorModeValue("gray.700", "gray.100");
-  job.description = job.description.replaceAll('<h1>', '<h1 style="font-size:18px">');
-  job.description = job.description.replaceAll('<p>', '<p style="margin-top:12px">');
-
+  console.log(job.description);
   return (
     <>
       <Box
@@ -112,7 +110,7 @@ const JobCard = ({ job }: JobCardProps) => {
                       <HStack>
                         <Icon as={TimeIcon} color="blue.400" />
                         <Text fontWeight="medium" color={textColor}>Experience:</Text>
-                        <Text color={textColor}>{job.required_experience} yrs</Text>
+                        <Text color={textColor}>{job.required_experience}+ yrs</Text>
                       </HStack>
                     </Box>
                   </WrapItem>
@@ -146,7 +144,7 @@ const JobCard = ({ job }: JobCardProps) => {
                         <Icon as={StarIcon} color="green.400" />
                         <Text fontWeight="medium" color={textColor}>Salary:</Text>
                         <Text color={textColor}>
-                          {job.salary_currency} {job.salary_min}–{job.salary_max}
+                          {job.salary_currency} {job.salary_min} - {job.salary_max}
                         </Text>
                       </HStack>
                     </Box>
@@ -170,7 +168,7 @@ const JobCard = ({ job }: JobCardProps) => {
                 </Text>
                 <Box
                   bg={descriptionBg}
-                  p={4}
+                  padding="24px"
                   borderRadius="md"
                   boxShadow="sm"
                   fontSize="sm"
@@ -178,6 +176,24 @@ const JobCard = ({ job }: JobCardProps) => {
                   maxHeight="400px"
                   overflowY="auto"
                   dangerouslySetInnerHTML={{ __html: job.description }}
+                  sx={{
+                    // Custom CSS
+                    "ul": {
+                      listStyleType: "disc",
+                      paddingLeft: "1.5rem",
+                    },
+                    "li": {
+                      marginBottom: "0.3rem",
+                      color: descriptionTextColor,
+                    },
+                    "h1": {
+                      fontSize: "24px",
+                      marginBottom: "0.6rem",
+                    },
+                    "p": {
+                      marginBottom: "0.5rem",
+                    }
+                  }}
                 />
               </Box>
 
