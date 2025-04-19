@@ -27,26 +27,26 @@ async def lifespan(app: FastAPI):
             documents=location_list,
             ids=location_list,
         )
-    # scheduler = BackgroundScheduler()
-    # logger.info("Starting background jobs scheduler...")
-    # db_gen = get_db()
-    # db = next(db_gen)  # Get the database session
-    # for scraper in ScraperFactory(db).get_all_scrapers():
-    #     scraper.run()  # Initial run to fetch data immediately
-    #     # Schedule the scraper to run every 6 hours
-    #     scheduler.add_job(
-    #         scraper.run,
-    #         trigger="interval",
-    #         seconds=60 * 60 * 6,  # Run every 6 hours
-    #     )
-    # try:
-    #     next(db_gen)  # Ensure the database session is yielded
-    # except StopIteration:
-    #     pass
-    # scheduler.start()
+    scheduler = BackgroundScheduler()
+    logger.info("Starting background jobs scheduler...")
+    db_gen = get_db()
+    db = next(db_gen)  # Get the database session
+    for scraper in ScraperFactory(db).get_all_scrapers():
+        scraper.run()  # Initial run to fetch data immediately
+        # Schedule the scraper to run every 6 hours
+        scheduler.add_job(
+            scraper.run,
+            trigger="interval",
+            seconds=60 * 60 * 6,  # Run every 6 hours
+        )
+    try:
+        next(db_gen)  # Ensure the database session is yielded
+    except StopIteration:
+        pass
+    scheduler.start()
     yield
     logger.info("Shutting down background jobs scheduler...")
-    # scheduler.shutdown()
+    scheduler.shutdown()
 
 
 app = FastAPI(

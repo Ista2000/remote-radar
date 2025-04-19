@@ -99,7 +99,7 @@ class ScraperBase:
                 query_texts=[self.parse_job_location(soup)],
                 n_results=1,
                 include=[]
-            )["ids"][0])
+            )["ids"][0][0])
             job_details = {
                 **self.infer_job_details(page_data, company, location),
                 "title": self.parse_job_title(soup),
