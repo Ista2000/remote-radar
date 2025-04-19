@@ -1,7 +1,5 @@
-import { ColorModeScript } from '@chakra-ui/react';
 import { ChakraProviders } from './components/ChakraProviders';
 import { Metadata } from 'next';
-import theme from './theme';
 
 export const metadata: Metadata = {
   title: 'RemoteRadar',

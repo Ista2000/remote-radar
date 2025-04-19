@@ -5,7 +5,7 @@ import { AuthProvider } from "./context/AuthContext";
 const Home = () => {
   return (
     <Container alignItems="center" margin="1% 15%" width="70%" maxWidth="100%">
-      <Card>
+      <Card padding="12px">
         <div>
           Home
         </div>

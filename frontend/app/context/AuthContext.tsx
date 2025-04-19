@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           title: 'Login required',
           description: "Please login to continue",
           status: 'error',
-          duration: 5000,
+          duration: 1200,
           isClosable: true,
         });
       }
@@ -76,7 +76,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         title: 'Login success',
         description: `Welcome, ${response.data.user.full_name}`,
         status: 'success',
-        duration: 5,
+        duration: 1200,
+        isClosable: true,
+        position: "top-right",
       });
     } catch (error) {
       console.log('Login failed:', error);
