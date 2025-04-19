@@ -1,9 +1,16 @@
 "use client"
+import { Box, Card, Container } from "@chakra-ui/react";
 import { AuthProvider } from "./context/AuthContext";
 
 const Home = () => {
   return (
-    <div>Home</div>
+    <Container alignItems="center" margin="1% 15%" width="70%" maxWidth="100%">
+      <Card>
+        <div>
+          Home
+        </div>
+      </Card>
+    </Container>
   );
 }
 

@@ -49,7 +49,10 @@ interface Errors {
 }
 
 interface ErrorDetail {
-  ctx?: {error: string};
+  ctx?: {
+    error?: string,
+    reason?: string
+  };
   loc: Array<keyof Errors>;
   input?: string;
   msg: string;
@@ -57,7 +60,11 @@ interface ErrorDetail {
   url: string;
 }
 
-const Signup = ({onSignupSuccess}: {onSignupSuccess: () => void}) => {
+interface SignupProps {
+  onSignupSuccess: () => void;
+}
+
+const Signup = ({onSignupSuccess}: SignupProps) => {
   const [user, setUser] = useState<UserCreate>({
     email: '',
     password: '',
@@ -114,8 +121,6 @@ const Signup = ({onSignupSuccess}: {onSignupSuccess: () => void}) => {
         duration: 5000,
         isClosable: true,
       });
-
-
     } catch (e) {
       if (axios.isAxiosError(e)) {
         const details = e.response?.data?.detail;
@@ -124,7 +129,8 @@ const Signup = ({onSignupSuccess}: {onSignupSuccess: () => void}) => {
         } else {
           setError(
             details.reduce((acc: Errors, detail: ErrorDetail) => {
-              acc[detail.loc[0]] = detail.ctx?.error || detail.msg;
+              console.log(detail);
+              acc[detail.loc[0]] = detail.ctx?.error || detail.ctx?.reason || detail.msg;
               return acc;
             }, {} as Errors)
           );
@@ -144,9 +150,9 @@ const Signup = ({onSignupSuccess}: {onSignupSuccess: () => void}) => {
 
   return (
   <VStack spacing={4} align="stretch">
-    <FileUpload onFileSelect={file => setResume(file)}/>
+    <FileUpload onFileSelect={file => setResume(file)} width="100%" height="100px"/>
 
-    <FormControl isInvalid={!!error?.email} isRequired>
+    <FormControl isInvalid={!!error?.email} isRequired marginTop="24px">
       <FormLabel htmlFor="email">Email</FormLabel>
       <Input name="email" type="email" onChange={handleChange} />
       <FormErrorMessage>{error?.email}</FormErrorMessage>
@@ -198,7 +204,7 @@ const Signup = ({onSignupSuccess}: {onSignupSuccess: () => void}) => {
         }
       >
         {rls.roles.map(role => (
-          <option value={role}>{role}</option>
+          <option value={role} key={role}>{role}</option>
         ))}
       </MultiSelect>
       <FormErrorMessage>{error?.preferred_roles}</FormErrorMessage>
@@ -217,7 +223,7 @@ const Signup = ({onSignupSuccess}: {onSignupSuccess: () => void}) => {
         }
       >
         {Object.entries(rls.locations).flatMap(([country, cities]) => cities.map(city => (
-          <option value={`${city}, ${country}`}>{`${city}, ${country}`}</option>
+          <option value={`${city}, ${country}`} key={`${city}, ${country}`}>{`${city}, ${country}`}</option>
         )))}
       </MultiSelect>
       <FormErrorMessage>{error?.preferred_locations}</FormErrorMessage>
@@ -235,7 +241,7 @@ const Signup = ({onSignupSuccess}: {onSignupSuccess: () => void}) => {
         }
       >
         {rls.sources.map(source => (
-          <option value={source}>{source}</option>
+          <option value={source} key={source}>{source}</option>
         ))}
       </MultiSelect>
       <FormErrorMessage>{error?.preferred_sources}</FormErrorMessage>

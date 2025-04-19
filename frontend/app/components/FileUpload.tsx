@@ -1,13 +1,14 @@
 "use client"
 
-import { Button, Input, FormLabel, Box } from "@chakra-ui/react"
+import { AddIcon, PlusSquareIcon } from "@chakra-ui/icons"
+import { Button, Input, FormLabel, Box, BoxProps } from "@chakra-ui/react"
 import { useRef, useState } from "react"
 
-const FileUpload = ({
-  onFileSelect,
-}: {
+interface FileUploadProps extends BoxProps {
   onFileSelect: (file: File | null) => void
-}) => {
+}
+
+const FileUpload = ({onFileSelect, ...boxProps}: FileUploadProps) => {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
 
@@ -22,14 +23,14 @@ const FileUpload = ({
   }
 
   return (
-    <Box>
+    <Box {...boxProps}>
       <Input
         type="file"
         ref={inputRef}
         display="none"
         onChange={handleFileChange}
       />
-      <Button onClick={openFileDialog} colorScheme="teal" variant="outline">
+      <Button onClick={openFileDialog} colorScheme="teal" variant="outline" width="100%" height="100%" leftIcon={<PlusSquareIcon />}>
         Upload Resume
       </Button>
       {fileName && (

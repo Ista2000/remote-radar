@@ -2,8 +2,21 @@
 import axios from "axios";
 import { createContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { UserType, AuthContextType } from "../types/AuthContextType";
-import { useToast } from "@chakra-ui/react";
+import { Box, Container, Heading, useToast } from "@chakra-ui/react";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+
+export interface UserType {
+  id: number;
+  email: string;
+  full_name: string;
+};
+
+type AuthContextType = {
+  user: UserType | null;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+};
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -28,7 +41,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (window.location.pathname === "/auth") {
           return;
         }
-        console.log(e);
         router.push("/auth");
         toast({
           position: "top-right",
@@ -74,13 +86,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem('token');
     delete axios.defaults.headers.common['Authorization'];
-    router.push('/login');
+    router.push('/auth');
   }
 
   return (
     <AuthContext.Provider value={{ user, login, logout }}>
-      {children}
+      <Box minH="100vh" display="flex" flexDirection="column">
+        <Header />
+        <Box as="main" flex="1">
+          {children}
+        </Box>
+        <Footer />
+      </Box>
     </AuthContext.Provider>
   );
 };
