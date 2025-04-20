@@ -1,17 +1,21 @@
+from datetime import datetime, timezone
+from dateutil.relativedelta import relativedelta
 from io import BytesIO
 import json
 import os
 from fastapi import status
 
-from ..src.models import User
+from ..src.main import expire_jobs, mark_jobs_inactive
+from ..src.models import Job, User
 from ..src.utils import verify_password
 
 
 def test_create_user(client, db) -> None:
     # Prepare the stringified JSON for the `user` field
     user_data = {
-        "email": "testuser",
-        "password": "testpassword",
+        "email": "testuser@gmail.com",
+        "password": "Testpassword123",
+        "repeat_password": "Testpassword123",
         "full_name": "Test User",
         "experience_years": 5,
     }
@@ -31,14 +35,14 @@ def test_create_user(client, db) -> None:
         },  # Attach the resume file
     )
 
-    user: User = db.query(User).filter(User.email == "testuser").first()
+    user: User = db.query(User).filter(User.email == "testuser@gmail.com").first()
     # Assertions
     assert response.status_code == status.HTTP_201_CREATED
     user_dict = json.loads(response.content)
     assert user is not None
-    assert user.email == "testuser"
-    assert user_dict["email"] == "testuser"
-    assert verify_password("testpassword", user.hashed_password)
+    assert user.email == "testuser@gmail.com"
+    assert user_dict["email"] == "testuser@gmail.com"
+    assert verify_password("Testpassword123", user.hashed_password)
     assert not "hashed_password" in user_dict and not "password" in user_dict
     assert user.full_name == "Test User"
     assert user_dict["full_name"] == "Test User"
@@ -64,15 +68,15 @@ def test_login_correct_password(client, db_with_user):
     response = client.post(
         "/auth/token",
         data={
-            "username": "testuser",
-            "password": "testpassword",
+            "username": "testuser@gmail.com",
+            "password": "Testpassword123",
         },
     )
 
-    user = db_with_user.query(User).filter(User.email == "testuser").first()
+    user = db_with_user.query(User).filter(User.email == "testuser@gmail.com").first()
     assert user is not None
-    assert user.email == "testuser"
-    assert verify_password("testpassword", user.hashed_password)
+    assert user.email == "testuser@gmail.com"
+    assert verify_password("Testpassword123", user.hashed_password)
 
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
@@ -84,10 +88,53 @@ def test_login_wrong_password(client, db_with_user):
     response = client.post(
         "/auth/token",
         data={
-            "username": "testuser",
-            "password": "userpassword",
+            "username": "testuser@gmail.com",
+            "password": "Testpassword1234",
         },
     )
-    assert db_with_user.query(User).filter(User.email == "testuser").first() is not None
+    assert (
+        db_with_user.query(User).filter(User.email == "testuser@gmail.com").first()
+        is not None
+    )
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_expire_jobs(db):
+    db.bulk_save_objects(
+        [
+            Job(
+                title="Random Title",
+                company="Random Company",
+                url="Random URL 1",
+                source="Random Source",
+                role="Random Role",
+                posted_at=datetime.now(timezone.utc),
+            ),
+            Job(
+                title="Random Title",
+                company="Random Company",
+                url="Random URL 2",
+                source="Random Source",
+                role="Random Role",
+                posted_at=datetime.now(timezone.utc) - relativedelta(hours=24 * 7 + 12),
+            ),
+            Job(
+                title="Random Title",
+                company="Random Company",
+                url="Random URL 3",
+                source="Random Source",
+                role="Random Role",
+                posted_at=datetime.now(timezone.utc) - relativedelta(days=9),
+            ),
+        ]
+    )
+    db.commit()
+    expire_jobs(db)
+    assert len(db.query(Job).all()) == 3
+    assert len(db.query(Job).filter(Job.is_active == True).all()) == 3
+    mark_jobs_inactive(db)
+    assert len(db.query(Job).all()) == 3
+    assert len(db.query(Job).filter(Job.is_active == True).all()) == 1
+    expire_jobs(db)
+    assert len(db.query(Job).all()) == 1

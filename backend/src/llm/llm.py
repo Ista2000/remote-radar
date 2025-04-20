@@ -74,9 +74,13 @@ class LLM:
                 return response.model_dump()
             except RateLimitError as e:
                 if idx == len(self.llms) - 1:
-                    logger.error(f"Rate limit hit for all models: {traceback.format_exc()}")
+                    logger.error(
+                        f"Rate limit hit for all models: {traceback.format_exc()}"
+                    )
                 else:
-                    logger.warning(f"Rate limit hit for {LLM_MODELS[idx]}: {traceback.format_exc()}")
+                    logger.warning(
+                        f"Rate limit hit for {LLM_MODELS[idx]}: {traceback.format_exc()}"
+                    )
                     logger.warning(f"Falling back to {LLM_MODELS[idx + 1]}")
                 continue
             except Exception:
@@ -98,7 +102,9 @@ class LLM:
                     {"resume_data": resume_data, "roles": "\n".join(preferred_roles)}
                 )
             except RateLimitError as e:
-                logger.error(f"Error extracting keywords from user resume data: {traceback.format_exc()}")
+                logger.error(
+                    f"Error extracting keywords from user resume data: {traceback.format_exc()}"
+                )
                 continue
             except Exception:
                 logger.error(

@@ -38,7 +38,7 @@ def recommended_jobs(
         db.query(User.resume_text).filter(User.email == user["email"]).first()[0]
     )
     if not resume_text_json:
-        return db.query(Job).all()
+        return db.query(Job).filter(Job.is_active == True).all()
     resume_text_grouped_by_roles: dict = json.loads(resume_text_json)
     if role:
         resume_text_grouped_by_roles = {role: resume_text_grouped_by_roles[role]}
@@ -57,7 +57,8 @@ def recommended_jobs(
     )
 
     jobs = db.query(Job).filter(
-        Job.url.in_(list(set(url for urls in role_to_urls.values() for url in urls)))
+        Job.url.in_(list(set(url for urls in role_to_urls.values() for url in urls))),
+        Job.is_active == True,
     )
     url_to_job = dict((job.url, job) for job in jobs)
     return {
@@ -89,7 +90,11 @@ def search_jobs(
     ordering = case({val: idx for idx, val in enumerate(job_urls)}, value=Job.url)
     # Query jobs table for job listings with given
     # job urls filtered by the optional filters with ordering
-    job_listings = db.query(Job).filter(Job.url.in_(job_urls)).order_by(ordering)
+    job_listings = (
+        db.query(Job)
+        .filter(Job.url.in_(job_urls), Job.is_active == True)
+        .order_by(ordering)
+    )
     if len(location) > 0:
         job_listings = job_listings.filter(Job.location == location)
     if len(source) > 0:

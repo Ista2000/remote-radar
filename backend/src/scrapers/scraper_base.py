@@ -190,8 +190,8 @@ Salary From Levels FYI: {job.get("salary_from_levels_fyi", False)}
         start_time = time.time()
         self.fetch_job_listing_urls()
         logger.info(
-            f"Fetched {sum(len(urls) for urls in self.location_to_urls.values())} " +
-            f"job listings in {time.time() - start_time:.2f} seconds."
+            f"Fetched {sum(len(urls) for urls in self.location_to_urls.values())} "
+            + f"job listings in {time.time() - start_time:.2f} seconds."
         )
         parse_jobs_start_time = time.time()
         jobs = [

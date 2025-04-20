@@ -13,7 +13,13 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import jwt
 import pdfplumber
-from pydantic import BaseModel, EmailStr, Field, ValidationError, ValidationInfo, field_validator
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    ValidationError,
+    ValidationInfo,
+    field_validator,
+)
 import sqlalchemy
 import sqlalchemy.exc
 from sqlalchemy.orm import Session
@@ -82,7 +88,7 @@ class UserCreateRequest(BaseModel):
     def validate_full_name(cls, v: str):
         if len(v) == 0:
             raise ValueError("Field required")
-        if ' ' not in v:
+        if " " not in v:
             raise ValueError("Both first name and last name is required")
         return v
 
@@ -96,7 +102,9 @@ class UserCreateRequest(BaseModel):
     @field_validator("preferred_locations")
     def validate_preferred_locations(cls, v: list[str]):
         all_valid_locations = get_normalized_locations_list_string()
-        invalid_locations = [location for location in v if location not in all_valid_locations]
+        invalid_locations = [
+            location for location in v if location not in all_valid_locations
+        ]
         if len(invalid_locations) > 0:
             raise ValueError(f"Invalid locations: {', '.join(invalid_locations)}")
         return v
@@ -107,7 +115,6 @@ class UserCreateRequest(BaseModel):
         if invalid_sources:
             raise ValueError(f"Invalid sources: {', '.join(invalid_sources)}")
         return v
-
 
 
 class Token(BaseModel):
@@ -149,11 +156,11 @@ def get_myself(email: user_dependency, db: db_dependency):
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_user(
-    user: Annotated[str, Form()], db: db_dependency, resume: UploadFile | str = File(None)
+    user: Annotated[str, Form()],
+    db: db_dependency,
+    resume: UploadFile | str = File(None),
 ):
     """Create a new user"""
-    if resume is str:
-        resume = File(None)
     try:
         user_obj = UserCreateRequest.model_validate_json(user)
     except ValidationError as e:
@@ -165,7 +172,7 @@ async def create_user(
     resume_text = None
     resume_file_path = None
 
-    if resume:
+    if resume and not isinstance(resume, str):
         if resume.content_type != "application/pdf":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -211,7 +218,7 @@ async def create_user(
             is_admin=False,
             resume_url=(
                 os.path.join("static", user_obj.email, resume.filename)
-                if resume
+                if resume and not isinstance(resume, str)
                 else None
             ),
             resume_text=resume_text,

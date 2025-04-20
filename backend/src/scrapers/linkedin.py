@@ -32,11 +32,20 @@ class LinkedInScraper(ScraperBase):
                             link_elem = job_card.find("a", href=True)
                             if link_elem is not None:
                                 self.location_to_urls[f"{city}, {country}"].append(
-                                    "https://www.linkedin.com/" + "/".join(link_elem["href"].split("?")[0].split("/")[3:])
+                                    "https://www.linkedin.com/"
+                                    + "/".join(
+                                        link_elem["href"].split("?")[0].split("/")[3:]
+                                    )
                                 )
-                                if len(self.location_to_urls[f"{city}, {country}"]) >= self.num_jobs_per_location:
+                                if (
+                                    len(self.location_to_urls[f"{city}, {country}"])
+                                    >= self.num_jobs_per_location
+                                ):
                                     break
-                        if len(self.location_to_urls[f"{city}, {country}"]) >= self.num_jobs_per_location:
+                        if (
+                            len(self.location_to_urls[f"{city}, {country}"])
+                            >= self.num_jobs_per_location
+                        ):
                             break
         except Exception:
             logger.error(

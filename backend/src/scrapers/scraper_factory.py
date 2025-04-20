@@ -14,7 +14,7 @@ class ScraperFactory:
             # Add other scrappers here as needed
         }
 
-    def get_scraper(self, source: str) -> ScraperBase:
+    def get_scraper(self, source: str) -> list[ScraperBase]:
         """
         Returns an instance of the scraper based on the source.
 
@@ -32,4 +32,6 @@ class ScraperFactory:
 
         :return: A list of all available scrapers.
         """
-        return list(scraper for scrapers in self.scrapers.values() for scraper in scrapers)
+        return list(
+            scraper for scrapers in self.scrapers.values() for scraper in scrapers
+        )

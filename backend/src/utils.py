@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from dateutil.relativedelta import relativedelta
 import bcrypt
 import re
@@ -43,20 +43,25 @@ def get_posted_date(relative_date_str: str) -> datetime:
         if match:
             value = int(match.group(1))
             if unit == "minute":
-                return datetime.now() - relativedelta(minutes=value)
+                return datetime.now(timezone.utc) - relativedelta(minutes=value)
             elif unit == "hour":
-                return datetime.now() - relativedelta(hours=value)
+                return datetime.now(timezone.utc) - relativedelta(hours=value)
             elif unit == "day":
-                return datetime.now() - relativedelta(days=value)
+                return datetime.now(timezone.utc) - relativedelta(days=value)
             elif unit == "week":
-                return datetime.now() - relativedelta(weeks=value)
+                return datetime.now(timezone.utc) - relativedelta(weeks=value)
             elif unit == "month":
-                return datetime.now() - relativedelta(months=value)
+                return datetime.now(timezone.utc) - relativedelta(months=value)
             elif unit == "year":
-                return datetime.now() - relativedelta(years=value)
+                return datetime.now(timezone.utc) - relativedelta(years=value)
 
     # If no matching patterns, return the current time (Fallback case)
-    return datetime.now()
+    return datetime.now(timezone.utc)
+
 
 def get_normalized_locations_list_string():
-    return [f"{city}, {country}" for country, city_dict in LOCATION_GEO_IDS_FOR_LINKEDIN.items() for city in city_dict.keys()]
+    return [
+        f"{city}, {country}"
+        for country, city_dict in LOCATION_GEO_IDS_FOR_LINKEDIN.items()
+        for city in city_dict.keys()
+    ]

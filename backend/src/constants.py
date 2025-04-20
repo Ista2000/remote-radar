@@ -2,11 +2,10 @@ import os
 
 DEFAULT_TOKEN_EXPIRE_MINUTES = 15
 STATIC_DIR_PATH = os.path.abspath("static/")
+EXPIRE_JOBS_AFTER_DAYS = 7
 
 # Roles for which scrapers will scrape the job data. Please keep the list sorted alphabetically.
-ROLES = [
-    "Software Engineer"
-]
+ROLES = ["Software Engineer"]
 
 # Locations and their LinkedIn GeoIds for which data will be scraped.
 # Please keep the list sorted alphabetically.
@@ -24,12 +23,10 @@ LOCATION_GEO_IDS_FOR_LINKEDIN = {
         # "Seattle": 105147929,
         # "Austin": 105184003,
         # "Los Angeles": 105112890,
-    }
+    },
 }
 
 # Sources for which scrapers have been implemented.
 # Make sure that the string matches exactly with `source` in the scraper.
 # Please keep the list sorted alphabetically.
-SOURCES = [
-    "LinkedIn"
-]
+SOURCES = ["LinkedIn"]

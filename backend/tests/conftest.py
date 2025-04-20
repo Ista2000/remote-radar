@@ -36,8 +36,8 @@ def client(db):
 @pytest.fixture(scope="function")
 def db_with_user(db):
     user = User(
-        email="testuser",
-        hashed_password=hash_password("testpassword"),
+        email="testuser@gmail.com",
+        hashed_password=hash_password("Testpassword123"),
         full_name="Test User",
         experience_years=5,
         preferred_roles="[]",
