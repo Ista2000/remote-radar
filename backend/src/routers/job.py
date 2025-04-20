@@ -29,8 +29,12 @@ class JobModel(BaseModel):
     source: str = Field(description="Job source", examples=["LinkedIn"])
     role: str = Field(description="Job role", examples=["Software Engineer"])
 
-    salary_min: Optional[int] = Field(description="Minimum salary offered", examples=[50000])
-    salary_max: Optional[int] = Field(description="Maximum salary offered", examples=[200000])
+    salary_min: Optional[int] = Field(
+        description="Minimum salary offered", examples=[50000]
+    )
+    salary_max: Optional[int] = Field(
+        description="Maximum salary offered", examples=[200000]
+    )
     salary_currency: str = Field(description="Salary currency", examples=["USD"])
     salary_from_levels_fyi: bool = Field(
         description="Was salary information sourced from levels.fyi", examples=[False]
@@ -165,9 +169,9 @@ def search_jobs(
         ordering = case({val: idx for idx, val in enumerate(job_urls)}, value=Job.url)
         # Query jobs table for job listings with given
         # job urls filtered by the optional filters with ordering
-        job_listings = job_listings \
-            .filter(Job.url.in_(job_urls), Job.is_active == True) \
-            .order_by(ordering)
+        job_listings = job_listings.filter(
+            Job.url.in_(job_urls), Job.is_active == True
+        ).order_by(ordering)
     if location:
         job_listings = job_listings.filter(Job.location == location)
     if source:
@@ -180,4 +184,7 @@ def search_jobs(
         job_listings = job_listings.filter(Job.remote == True)
 
     jobs = job_listings.all()
-    return dict((role, list(job for job in jobs if job.role == role)) for role in set(job.role for job in jobs))
+    return dict(
+        (role, list(job for job in jobs if job.role == role))
+        for role in set(job.role for job in jobs)
+    )
