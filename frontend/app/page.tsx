@@ -1,5 +1,5 @@
 "use client"
-import { Card, Center, Container, Divider, Skeleton, Spinner, Text } from "@chakra-ui/react";
+import { Container, Divider, Skeleton, Text } from "@chakra-ui/react";
 import { AuthProvider } from "./context/AuthContext";
 import { useEffect, useState } from "react";
 import axios from "axios";

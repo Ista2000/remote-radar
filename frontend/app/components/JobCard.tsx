@@ -52,7 +52,6 @@ const JobCard = ({ job }: JobCardProps) => {
   const cardBg = useColorModeValue("white", "gray.800");
   const descriptionBg = useColorModeValue("gray.50", "gray.700");
   const descriptionTextColor = useColorModeValue("gray.700", "gray.100");
-  console.log(job);
   return (
     <>
       <Box
@@ -88,7 +87,7 @@ const JobCard = ({ job }: JobCardProps) => {
       <Modal isOpen={isOpen} onClose={onClose} size="5xl" isCentered>
         <ModalOverlay />
         <ModalContent borderRadius="2xl" p={4}>
-          <ModalHeader>{job.title}</ModalHeader>
+          <ModalHeader>{job.title} @ {job.company}</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <Stack spacing={6}>

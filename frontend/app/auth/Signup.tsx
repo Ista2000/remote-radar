@@ -166,7 +166,7 @@ const Signup = ({onSignupSuccess}: SignupProps) => {
 
     <FormControl isInvalid={!!error?.repeat_password} isRequired>
       <FormLabel htmlFor="repeat_password">Repeat Password</FormLabel>
-      <Input name="repeat_password" type="repeat_password" onChange={handleChange} />
+      <Input name="repeat_password" type="password" onChange={handleChange} />
       {!error?.repeat_password ?
           <FormHelperText>Enter your password again</FormHelperText> :
           <FormErrorMessage>{error?.repeat_password}</FormErrorMessage>

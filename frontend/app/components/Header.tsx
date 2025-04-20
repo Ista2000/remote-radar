@@ -44,7 +44,7 @@ const Header = () => {
                   <Avatar name={user.full_name} size="sm" />
                   <VStack align="start" spacing={0}>
                     <Text color={textColor}>{user.full_name}</Text>
-                    <Link href="/edit" color={textColor} fontSize="xs">Edit profile</Link>
+                    <Link href="/profile/edit" color={textColor} fontSize="xs">Edit profile</Link>
                   </VStack>
                 </HStack>
                 <Divider height="16px"/>

@@ -2,7 +2,7 @@
 import axios from "axios";
 import { createContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Box, Container, Heading, useToast } from "@chakra-ui/react";
+import { Box, useToast } from "@chakra-ui/react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 
