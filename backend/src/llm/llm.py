@@ -10,6 +10,7 @@ from langchain_groq import ChatGroq
 from groq import RateLimitError
 from pydantic import BaseModel, Field
 
+from ..constants import ROLES
 from ..scrapers.levels_fyi import scrape_levels_fyi
 from .prompts import *
 
@@ -25,18 +26,20 @@ logger = logging.getLogger("uvicorn")
 
 class Job(BaseModel):
     description: str = Field(
-        "Description of the job prettified with HTML tags like <b>, <em>, etc."
+        description="Description of the job prettified with HTML tags like <b>, <em>, etc."
     )
     required_experience: Optional[int] = Field(
-        "Minimum years of required experience for the job"
+        description="Minimum years of required experience for the job"
     )
-    salary_min: Optional[int] = Field("Minimum salary offered by the job")
-    salary_max: Optional[int] = Field("Maximum salary offered by the job")
-    salary_currency: Optional[str] = Field("Currency of the salary offered by the job")
+    salary_min: Optional[int] = Field(description="Minimum salary offered by the job")
+    salary_max: Optional[int] = Field(description="Maximum salary offered by the job")
+    salary_currency: Optional[str] = Field(
+        description="Currency of the salary offered by the job"
+    )
     salary_from_levels_fyi: bool = Field(
-        "Did the salary need to be fetched from levels.fyi"
+        description="Did the salary need to be fetched from levels.fyi"
     )
-    remote: bool = Field("Is the job remotely available")
+    remote: bool = Field(description="Is the job remotely available")
 
 
 class LLM:
@@ -89,9 +92,11 @@ class LLM:
         return {}
 
     def extract_skills_from_resume(
-        self, resume_data: str, preferred_roles: list[str]
+        self, resume_data: str, preferred_roles: Optional[list[str]]
     ) -> dict[str, str]:
         """Extract skills from resume"""
+        if preferred_roles is None or len(preferred_roles) == 0:
+            return {}
         for llm in self.llms:
             try:
                 return (

@@ -119,13 +119,6 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
-
-@app.get("/")
-async def root():
-    """Root endpoint returning a welcome message"""
-    return {"message": "Welcome to Remote Radar API"}
-
-
 app.include_router(auth.router)  # Include the auth router
 app.include_router(job.router)  # Include the job router
 app.include_router(rls.router)  # Include the rls router

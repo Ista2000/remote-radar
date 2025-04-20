@@ -57,7 +57,6 @@ def test_create_user(client, db) -> None:
     assert user.receive_email_alerts is False
     assert user_dict["receive_email_alerts"] is False
     assert user.is_admin is False
-    assert user_dict["is_admin"] is False
     assert user.resume_url == os.path.join("static", user.email, resume_file.name)
     assert user_dict["resume_url"] == os.path.join(
         "static", user.email, resume_file.name

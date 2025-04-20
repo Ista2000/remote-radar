@@ -1,7 +1,8 @@
 import json
 import logging
 from typing import Optional
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
+from pydantic import BaseModel, Field
 from sqlalchemy import case
 
 from ..deps import db_dependency, job_collection, user_dependency
@@ -15,11 +16,47 @@ router = APIRouter(
 logger = logging.getLogger("uvicorn")
 
 
-@router.get("/")
-def get_job(db: db_dependency, url: str):
+class JobModel(BaseModel):
+    title: str = Field(
+        description="Job title",
+        examples=["Front-end developer", "DevOps Engineer (Entry level)"],
+    )
+    company: str = Field(description="Job company", examples=["Google", "Microsoft"])
+    location: str = Field(description="Job location", examples=["Bengaluru, India"])
+    description: str = Field(description="Job description (formatted as HTML)")
+    url: str = Field(description="Original job URL")
+    source: str = Field(description="Job source", examples=["LinkedIn"])
+    role: str = Field(description="Job role", examples=["Software Engineer"])
+
+    salary_min: int = Field(description="Minimum salary offered", examples=[50000])
+    salary_max: int = Field(description="Maximum salary offered", examples=[200000])
+    salary_currency: str = Field(description="Salary currency", examples=["USD"])
+    salary_from_levels_fyi: bool = Field(
+        description="Was salary information sourced from levels.fyi", examples=[False]
+    )
+    required_experience: int = Field(
+        description="Minimum years of experience required", examples=[3]
+    )
+    remote: bool = Field(description="Is the job remote available", examples=[True])
+
+    posted_at: str = Field(
+        description="Time and date of posting (approx)",
+        examples=["2025-04-20 16:30:23.161919+00:00"],
+    )
+    is_active: bool = Field(description="Is the job active or expired", examples=[True])
+
+
+@router.get(
+    "/",
+    response_model=JobModel,
+    summary="Get job",
+    description="Get a specific job from URL.",
+    response_description="Returns a job from the provided URL.",
+)
+def get_job(db: db_dependency, url: str = Query(description="URL of the scraped job")):
     """Get job from url"""
     try:
-        return db.query(Job).filter(Job.url == url).first[0]
+        return db.query(Job).filter(Job.url == url).first()
     except Exception as e:
         logger.error(f"Error while fetching job with url {url}: {e}")
         raise HTTPException(
@@ -28,29 +65,40 @@ def get_job(db: db_dependency, url: str):
         )
 
 
-@router.get("/recommended")
+@router.get(
+    "/recommended",
+    response_model=dict[str, list[JobModel]],
+    summary="Get recommended jobs for the user",
+    description="Returns a mapping of role → recommended job listings based on user's resume.",
+    response_description="A dictionary where keys are roles and values are lists of recommended jobs.",
+)
 def recommended_jobs(
-    user: user_dependency, db: db_dependency, role: Optional[str] = None
+    user: user_dependency,
+    db: db_dependency,
+    role: Optional[str] = Query(
+        None, description="Role filter to get recommended jobs"
+    ),
 ):
-    """Get all jobs"""
-    # Query the jobs table for all job listings
+    """Get all recommended jobs for the user based on their resume keywords"""
     resume_text_json = (
-        db.query(User.resume_text).filter(User.email == user["email"]).first()[0]
+        db.query(User.resume_text).filter(User.email == user["email"]).first()
     )
     if not resume_text_json:
-        return db.query(Job).filter(Job.is_active == True).all()
+        return {"NULL": db.query(Job).filter(Job.is_active == True).all()}
+
     resume_text_grouped_by_roles: dict = json.loads(resume_text_json)
     if role:
         resume_text_grouped_by_roles = {role: resume_text_grouped_by_roles[role]}
+
     role_to_urls = dict(
         zip(
             list(resume_text_grouped_by_roles.keys()),
             job_collection.query(
-                query_texts=list(
+                query_texts=[
                     " ".join(keywords)
                     for keywords in resume_text_grouped_by_roles.values()
-                ),
-                n_results=2,
+                ],
+                n_results=100,
                 include=[],
             )["ids"],
         )
@@ -60,22 +108,48 @@ def recommended_jobs(
         Job.url.in_(list(set(url for urls in role_to_urls.values() for url in urls))),
         Job.is_active == True,
     )
-    url_to_job = dict((job.url, job) for job in jobs)
+    url_to_job = {job.url: job for job in jobs}
+
     return {
-        role: [url_to_job[url] for url in urls] for role, urls in role_to_urls.items()
+        role: [url_to_job[url] for url in urls if url in url_to_job]
+        for role, urls in role_to_urls.items()
     }
 
 
-@router.get("/search")
+@router.get(
+    "/search",
+    response_model=list[JobModel],
+    summary="Search jobs",
+    description="Search for a job with keyword and filters.",
+    response_description="List of jobs that satisfy the search query.",
+)
 def search_jobs(
     user: user_dependency,
     db: db_dependency,
-    search_query: str,
-    location: str = "",
-    source: str = "",
-    role: str = "",
-    remote: Optional[str] = None,
-    experience_years: Optional[int] = None,
+    search_query: str = Query(
+        ...,
+        description="Search keyword(s) for the job title or description",
+        examples=["Software%20Engineer%20in%20Bengaluru"],
+    ),
+    location: str = Query(
+        "",
+        description="Preferred job location",
+        examples=["Bengaluru,%20India"],
+    ),
+    source: str = Query(
+        "",
+        description="Source of the job listing",
+        examples=["LinkedIn", "Glassdoor", "Indeed", "Wellfound"],
+    ),
+    role: str = Query(
+        "", description="Preferred job role", examples=["Software%20Engineer", "Ninja"]
+    ),
+    remote: Optional[bool] = Query(
+        None, description="Filter by remote preference", examples=[True, False]
+    ),
+    experience_years: Optional[int] = Query(
+        None, description="Minimum years of experience", examples=[1, 2, 3]
+    ),
 ):
     """Search for jobs based on the provided search query and optional filters"""
 

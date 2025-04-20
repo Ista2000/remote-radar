@@ -8,7 +8,16 @@ import traceback
 from typing import Annotated, Any, Optional
 
 from dotenv import load_dotenv
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import jwt
@@ -16,6 +25,7 @@ import pdfplumber
 from pydantic import (
     BaseModel,
     EmailStr,
+    Field,
     ValidationError,
     ValidationInfo,
     field_validator,
@@ -43,27 +53,43 @@ ALGORITHM = str(os.getenv("AUTH_ALGORITHM", ""))
 
 
 class UserModel(BaseModel):
-    id: int
-    email: EmailStr
-    full_name: str
-    experience_years: Optional[int]
-    preferred_roles: str
-    preferred_locations: str
-    preferred_sources: str
-    receive_email_alerts: bool
-    resume_url: Optional[str]
+    id: int = Field(description="User ID in the backend database")
+    email: EmailStr = Field(description="Email ID of the user")
+    full_name: str = Field(description="Full name of the user")
+    experience_years: Optional[int] = Field(
+        description="Industry experience of the user"
+    )
+    preferred_roles: str = Field(description="Preferred roles of the user (JSON)")
+    preferred_locations: str = Field(
+        description="Preferred locations of the user (JSON)"
+    )
+    preferred_sources: str = Field(description="Preferred sources of the user (JSON)")
+    receive_email_alerts: bool = Field(
+        description="Did the user opt-in to receive email alerts"
+    )
+    resume_url: Optional[str] = Field(description="Resume URL of the user")
 
 
 class UserCreateRequest(BaseModel):
-    email: EmailStr
-    password: str
-    repeat_password: str
-    full_name: str
-    experience_years: Optional[int] = None
-    preferred_roles: list[str] = []
-    preferred_locations: list[str] = []
-    preferred_sources: list[str] = []
-    receive_email_alerts: bool = False
+    email: EmailStr = Field(description="Email ID of the user")
+    password: str = Field(description="Password of the user")
+    repeat_password: str = Field(description="Repeat password")
+    full_name: str = Field(description="Full name of the user")
+    experience_years: Optional[int] = Field(
+        None, description="Industry experience of the user"
+    )
+    preferred_roles: list[str] = Field(
+        [], description="Preferred roles of the user (JSON)"
+    )
+    preferred_locations: list[str] = Field(
+        [], description="Preferred locations of the user (JSON)"
+    )
+    preferred_sources: list[str] = Field(
+        [], description="Preferred sources of the user (JSON)"
+    )
+    receive_email_alerts: bool = Field(
+        False, description="Did the user opt-in to receive email alerts"
+    )
 
     @field_validator("password")
     def validate_password(cls, password: str):
@@ -118,14 +144,24 @@ class UserCreateRequest(BaseModel):
 
 
 class UserUpdateRequest(BaseModel):
-    password: Optional[str] = None
-    repeat_password: Optional[str] = None
-    full_name: Optional[str] = None
-    experience_years: Optional[int] = None
-    preferred_roles: Optional[list[str]] = None
-    preferred_locations: Optional[list[str]] = None
-    preferred_sources: Optional[list[str]] = None
-    receive_email_alerts: Optional[bool] = None
+    password: Optional[str] = Field(None, description="Password of the user")
+    repeat_password: Optional[str] = Field(None, description="Password of the user")
+    full_name: Optional[str] = Field(None, description="Full name of the user")
+    experience_years: Optional[int] = Field(
+        None, description="Industry experience of the user"
+    )
+    preferred_roles: Optional[list[str]] = Field(
+        None, description="Preferred roles of the user (JSON)"
+    )
+    preferred_locations: Optional[list[str]] = Field(
+        None, description="Preferred locations of the user (JSON)"
+    )
+    preferred_sources: Optional[list[str]] = Field(
+        None, description="Preferred sources of the user (JSON)"
+    )
+    receive_email_alerts: Optional[bool] = Field(
+        None, description="Did the user opt-in to receive email alerts"
+    )
 
     @field_validator("password")
     def validate_password(cls, password: Optional[str]):
@@ -216,7 +252,13 @@ def create_access_token(
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-@router.get("/", response_model=UserModel)
+@router.get(
+    "/",
+    response_model=UserModel,
+    summary="Get myself",
+    description="Get user data for the authenticated user (myself)",
+    response_description="User data for myself",
+)
 def get_myself(email: user_dependency, db: db_dependency):
     user: User = db.query(User).filter(User.email == email["email"]).first()
     if not user:
@@ -226,17 +268,30 @@ def get_myself(email: user_dependency, db: db_dependency):
     return user
 
 
-@router.get("/{user_email}", response_model=UserModel)
+@router.get(
+    "/{user_email}",
+    response_model=UserModel,
+    summary="Get user",
+    description="Get user data for the the user with given email.",
+    response_description="User data for the the user with given email.",
+)
 def get_user(email: user_dependency, db: db_dependency, user_email: str):
     user: User = db.query(User).filter(User.email == user_email).first()
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not authenticated"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
     return user
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    status_code=status.HTTP_201_CREATED,
+    response_model=UserModel,
+    summary="Create user",
+    description="Create user with given data.",
+    response_description="User data for created user.",
+)
 async def create_user(
     user: Annotated[str, Form()],
     db: db_dependency,
@@ -308,9 +363,7 @@ async def create_user(
         db.add(db_user)
         db.commit()
         db.refresh(db_user)
-        user_dict: dict = jsonable_encoder(db_user)
-        user_dict.pop("hashed_password", None)
-        return user_dict
+        return db_user
     except sqlalchemy.exc.IntegrityError as e:
         db.rollback()
         error_message = str(e.orig)
@@ -352,7 +405,54 @@ async def create_user(
         )
 
 
-@router.patch("/", status_code=status.HTTP_200_OK)
+@router.patch(
+    "/",
+    status_code=status.HTTP_200_OK,
+    response_model=UserModel,
+    summary="Edit user",
+    description="Edit user with given data. Users can only call this endpoint for themselves.",
+    response_description="Updated user data for the user.",
+    openapi_extra={
+        "requestBody": {
+            "content": {
+                "multipart/form-data": {
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "updated_user": {
+                                "type": "string",
+                                "format": "json",
+                                "description": "A JSON string matching the UserUpdateRequest model",
+                                "examples": [
+                                    json.dumps(
+                                        {
+                                            "full_name": "Jane Doe",
+                                            "experience_years": 3,
+                                            "preferred_roles": ["Frontend", "DevOps"],
+                                            "preferred_locations": [
+                                                "Remote",
+                                                "Bengaluru",
+                                            ],
+                                            "preferred_sources": ["LinkedIn", "Indeed"],
+                                            "receive_email_alerts": True,
+                                        },
+                                        indent=2,
+                                    )
+                                ],
+                            },
+                            "resume": {
+                                "type": "string",
+                                "format": "binary",
+                                "description": "Optional resume file to upload",
+                            },
+                        },
+                        "required": ["updated_user"],
+                    }
+                }
+            }
+        }
+    },
+)
 async def update_user(
     email: user_dependency,
     db: db_dependency,
@@ -398,7 +498,7 @@ async def update_user(
                 detail=f"Failed to process the resume: {str(e)}",
             )
 
-    if resume_text and len(user_obj.preferred_roles) > 0:
+    if resume_text:
         resume_text = json.dumps(
             llm.extract_skills_from_resume(resume_text, user_obj.preferred_roles)
         )
@@ -406,10 +506,26 @@ async def update_user(
     try:
         user.full_name = user_obj.full_name or user.full_name
         user.experience_years = user_obj.experience_years or user.experience_years
-        user.preferred_roles = json.dumps(user_obj.preferred_roles) if user_obj.preferred_roles else user.preferred_roles
-        user.preferred_locations = json.dumps(user_obj.preferred_locations) if user_obj.preferred_locations else user.preferred_locations
-        user.preferred_sources = json.dumps(user_obj.preferred_sources) if user_obj.preferred_sources else user.preferred_sources
-        user.receive_email_alerts = user_obj.receive_email_alerts if user_obj.receive_email_alerts is not None else user.receive_email_alerts
+        user.preferred_roles = (
+            json.dumps(user_obj.preferred_roles)
+            if user_obj.preferred_roles
+            else user.preferred_roles
+        )
+        user.preferred_locations = (
+            json.dumps(user_obj.preferred_locations)
+            if user_obj.preferred_locations
+            else user.preferred_locations
+        )
+        user.preferred_sources = (
+            json.dumps(user_obj.preferred_sources)
+            if user_obj.preferred_sources
+            else user.preferred_sources
+        )
+        user.receive_email_alerts = (
+            user_obj.receive_email_alerts
+            if user_obj.receive_email_alerts is not None
+            else user.receive_email_alerts
+        )
 
         if resume and not isinstance(resume, str):
             user.resume_url = os.path.join("static", user.email, resume.filename)
@@ -417,10 +533,7 @@ async def update_user(
 
         db.commit()
         db.refresh(user)
-
-        user_dict = jsonable_encoder(user)
-        user_dict.pop("hashed_password", None)
-        return user_dict
+        return user
 
     except Exception as e:
         db.rollback()
