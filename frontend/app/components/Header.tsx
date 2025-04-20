@@ -48,7 +48,7 @@ const Header = () => {
                   </VStack>
                 </HStack>
                 <Divider height="16px"/>
-                <MenuItem color={textColor} onClick={() => router.push(user.email + "/profile")}>Profile</MenuItem>
+                <MenuItem color={textColor} onClick={() => router.push("/profile")}>Profile</MenuItem>
                 <MenuItem color={textColor} onClick={() => router.push("/profile/edit/preferences")}>Preferences</MenuItem>
                 <MenuItem color={textColor} onClick={logout}>Logout</MenuItem>
               </MenuList>

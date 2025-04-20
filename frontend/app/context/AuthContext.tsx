@@ -14,6 +14,8 @@ export interface UserType {
   preferred_locations: Array<string>;
   preferred_sources: Array<string>;
   receive_email_alerts?: boolean;
+  experience_years?: number;
+  resume_url?: string | null;
 };
 
 type AuthContextType = {
