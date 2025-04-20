@@ -113,7 +113,7 @@ const EditUser = () => {
     <VStack spacing={4} align="stretch">
       <FileUpload onFileSelect={file => setResume(file)} width="100%" height="100px" />
 
-      <FormControl isInvalid={!!error?.password}>
+      <FormControl isInvalid={!!error?.password} marginTop="24px">
         <FormLabel htmlFor="password">New Password</FormLabel>
         <Input name="password" type="password" onChange={handleChange} />
         <FormErrorMessage>{error?.password}</FormErrorMessage>

@@ -12,12 +12,14 @@ import {
 } from "@chakra-ui/react";
 import { useAuthContext } from "../hooks/useAuth";
 import axios from "axios";
+import { useRouter } from "next/navigation";
 
 const Login = () => {
-  const { login } = useAuthContext();
+  const { user: authUser, login } = useAuthContext();
   const [user, setUser] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -39,6 +41,10 @@ const Login = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUser({ ...user, [e.target.name]: e.target.value });
+  }
+
+  if (!!authUser) {
+    return "ALREADY LOGGED IN";
   }
 
   return (

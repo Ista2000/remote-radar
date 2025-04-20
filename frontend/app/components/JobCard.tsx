@@ -68,7 +68,7 @@ const JobCard = ({ job }: JobCardProps) => {
           <Text fontWeight="bold" fontSize="lg">
             {job.title}
           </Text>
-          <Badge colorScheme={job.is_active ? "green" : "red"}>
+          <Badge colorScheme={job.is_active ? "green" : "red"} h="18px">
             {job.is_active ? "Active" : "Closed"}
           </Badge>
         </Flex>

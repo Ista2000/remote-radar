@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Box, useToast } from "@chakra-ui/react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import { SearchProvider } from "./SearchContext";
 
 export interface UserType {
   id: number;
@@ -35,10 +36,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const setUserIfTokenFound = async () => {
       try {
         const token = localStorage.getItem('token');
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         if (user || !token) {
           return;
         }
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         const response = await axios.get(
           `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth`,
         );
@@ -111,13 +112,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <AuthContext.Provider value={{ user, login, logout }}>
-      <Box minH="100vh" display="flex" flexDirection="column">
-        <Header />
-        <Box as="main" flex="1">
-          {children}
+      <SearchProvider>
+        <Box minH="100vh" display="flex" flexDirection="column">
+          <Header />
+          <Box as="main" flex="1" marginTop="84px">
+            {children}
+          </Box>
+          <Footer />
         </Box>
-        <Footer />
-      </Box>
+      </SearchProvider>
     </AuthContext.Provider>
   );
 };
