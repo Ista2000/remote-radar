@@ -71,7 +71,7 @@ def get_job(db: db_dependency, url: str = Query(description="URL of the scraped 
     response_model=dict[str, list[JobModel]],
     summary="Get recommended jobs for the user",
     description="Returns a mapping of role → recommended job listings based on user's resume.",
-    response_description="A dictionary where keys are roles and values are lists of recommended jobs.",
+    response_description="A mapping of role → recommended job listings based on user's resume.",
 )
 def recommended_jobs(
     user: user_dependency,
@@ -118,16 +118,16 @@ def recommended_jobs(
 
 @router.get(
     "/search",
-    response_model=list[JobModel],
+    response_model=dict[str, list[JobModel]],
     summary="Search jobs",
-    description="Search for a job with keyword and filters.",
-    response_description="List of jobs that satisfy the search query.",
+    description="Returns a mapping of role → recommended job listings based on search query.",
+    response_description="A mapping of role → recommended job listings based on search query.",
 )
 def search_jobs(
     user: user_dependency,
     db: db_dependency,
     search_query: str = Query(
-        ...,
+        "",
         description="Search keyword(s) for the job title or description",
         examples=["Software%20Engineer%20in%20Bengaluru"],
     ),
@@ -144,40 +144,40 @@ def search_jobs(
     role: str = Query(
         "", description="Preferred job role", examples=["Software%20Engineer", "Ninja"]
     ),
-    remote: Optional[bool] = Query(
-        None, description="Filter by remote preference", examples=[True, False]
+    remote: bool = Query(
+        False, description="Filter by remote preference", examples=[True, False]
     ),
     experience_years: Optional[int] = Query(
         None, description="Minimum years of experience", examples=[1, 2, 3]
     ),
 ):
     """Search for jobs based on the provided search query and optional filters"""
-
     # Extract job URLs from the job collection
-    job_urls = list(
-        job_collection.query(
-            query_texts=[(role + " " + search_query).strip()],
-            n_results=5,
-            include=[],
-        )["ids"][0]
-    )
-    ordering = case({val: idx for idx, val in enumerate(job_urls)}, value=Job.url)
-    # Query jobs table for job listings with given
-    # job urls filtered by the optional filters with ordering
-    job_listings = (
-        db.query(Job)
-        .filter(Job.url.in_(job_urls), Job.is_active == True)
-        .order_by(ordering)
-    )
-    if len(location) > 0:
+    job_listings = db.query(Job)
+    if search_query:
+        job_urls = list(
+            job_collection.query(
+                query_texts=[(role + " " + search_query).strip()],
+                n_results=5,
+                include=[],
+            )["ids"][0]
+        )
+        ordering = case({val: idx for idx, val in enumerate(job_urls)}, value=Job.url)
+        # Query jobs table for job listings with given
+        # job urls filtered by the optional filters with ordering
+        job_listings = job_listings \
+            .filter(Job.url.in_(job_urls), Job.is_active == True) \
+            .order_by(ordering)
+    if location:
         job_listings = job_listings.filter(Job.location == location)
-    if len(source) > 0:
+    if source:
         job_listings = job_listings.filter(Job.source == source)
-    if len(role) > 0:
+    if role:
         job_listings = job_listings.filter(Job.role == role)
     if experience_years is not None:
         job_listings = job_listings.filter(Job.required_experience <= experience_years)
-    if remote is not None:
-        job_listings = job_listings.filter(Job.remote == remote)
-    # Convert the query result to a list of dictionaries
-    return job_listings.all()
+    if remote:
+        job_listings = job_listings.filter(Job.remote == True)
+
+    jobs = job_listings.all()
+    return dict((role, list(job for job in jobs if job.role == role)) for role in set(job.role for job in jobs))
