@@ -131,9 +131,9 @@ class ScraperBase:
 
     def save_to_db(self, jobs: list[dict]):
         try:
-            self.db.bulk_save_objects(
-                [
-                    Job(
+            for job_dict in jobs:
+                if "title" in job_dict and job_dict["title"] is not None:
+                    job = Job(
                         title=job_dict["title"],
                         company=job_dict["company"],
                         location=job_dict["location"],
@@ -151,11 +151,8 @@ class ScraperBase:
                         posted_at=job_dict["posted_at"],
                         remote=job_dict["remote"],
                     )
-                    for job_dict in jobs
-                    if "title" in job_dict and job_dict["title"] is not None
-                ]
-            )
-            self.db.commit()
+                    self.db.add(job)
+                    self.db.commit()
         except IntegrityError:
             logger.error(
                 f"Integrity error while saving to DB: {traceback.format_exc()}"

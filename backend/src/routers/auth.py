@@ -226,6 +226,16 @@ def get_myself(email: user_dependency, db: db_dependency):
     return user
 
 
+@router.get("/{user_email}", response_model=UserModel)
+def get_user(email: user_dependency, db: db_dependency, user_email: str):
+    user: User = db.query(User).filter(User.email == user_email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not authenticated"
+        )
+    return user
+
+
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_user(
     user: Annotated[str, Form()],
