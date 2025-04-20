@@ -50,6 +50,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           preferred_sources: JSON.parse(response.data.preferred_sources),
         });
       } catch (e) {
+        console.log(e);
         if (window.location.pathname === "/auth") {
           return;
         }

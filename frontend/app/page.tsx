@@ -98,7 +98,7 @@ const Home = () => {
                 </option>
               ))}
             </Select>
-            <Text size="lg"> jobs matching "{searchTerm}"</Text>
+            <Text size="lg"> jobs matching &ldquo;{searchTerm}&rdquo;</Text>
           </Flex>
         )}
       <Divider margin="24px 0"/>

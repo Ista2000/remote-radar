@@ -1,6 +1,6 @@
 "use client"
 
-import { AddIcon, PlusSquareIcon } from "@chakra-ui/icons"
+import { PlusSquareIcon } from "@chakra-ui/icons"
 import { Button, Input, FormLabel, Box, BoxProps } from "@chakra-ui/react"
 import { useRef, useState } from "react"
 
