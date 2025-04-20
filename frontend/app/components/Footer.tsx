@@ -11,7 +11,7 @@ const Footer = () => {
   return (
     <Box as="footer" bg={bg} py={4} mt={10}>
       <Flex justify="center" align="center" direction="column" gap={2}>
-        <Text fontSize="sm" color={textColor}>
+        <Text fontSize="sm" color={textColor} textAlign="center">
           © {new Date().getFullYear()} RemoteRadar. Made with ❤️ to help devs discover better remote jobs.
         </Text>
         <Text fontSize="xs" color={subTextColor}>

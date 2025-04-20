@@ -1,18 +1,35 @@
 "use client";
 import { createContext, useContext, useState, ReactNode } from "react";
 
+export type FilterType = {
+  location: string | null;
+  role: string | null;
+  source: string | null;
+  experience: number | null;
+  remote: boolean;
+};
+
 type SearchContextType = {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
+  filters: FilterType;
+  setFilters: (filter: FilterType) => void;
 };
 
 const SearchContext = createContext<SearchContextType | undefined>(undefined);
 
 export const SearchProvider = ({ children }: { children: ReactNode }) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState<FilterType>({
+    location: null,
+    role: null,
+    source: null,
+    experience: null,
+    remote: false,
+  });
 
   return (
-    <SearchContext.Provider value={{ searchTerm, setSearchTerm }}>
+    <SearchContext.Provider value={{ searchTerm, setSearchTerm, filters, setFilters }}>
       {children}
     </SearchContext.Provider>
   );

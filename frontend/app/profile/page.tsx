@@ -10,14 +10,17 @@ import {
   Link,
   Avatar,
   useColorModeValue,
+  Button,
+  HStack,
 } from "@chakra-ui/react";
 import { ExternalLinkIcon } from "@chakra-ui/icons";
 import { useAuthContext } from "../hooks/useAuth";
 import { AuthProvider } from "../context/AuthContext";
+import { useRouter } from "next/navigation";
 
 const UserProfile = () => {
   const { user } = useAuthContext();
-
+  const router = useRouter();
   const bg = useColorModeValue("white", "gray.800");
   const textSecondary = useColorModeValue("gray.600", "gray.400");
   const border = useColorModeValue("gray.200", "gray.700");
@@ -99,14 +102,22 @@ const UserProfile = () => {
               {user.receive_email_alerts ? "Enabled" : "Disabled"}
             </Badge>
           </Box>
+          <HStack>
+            <Button w="100%" colorScheme="teal" onClick={() => router.push("/profile/edit")}>
+              Edit Profile
+            </Button>
+            <Button w="100%" colorScheme="teal" onClick={() => router.push("/profile/edit/preferences")}>
+              Manage Preferences
+            </Button>
+          </HStack>
         </Stack>
       </Box>
 
       {/* Right pane - resume */}
       {user.resume_url && (
         <Box flex={1}>
-          <Text fontWeight="semibold" mb={2} textAlign="center">
-            Resume:
+          <Text fontWeight="semibold" mb={2} fontSize="24px">
+            Resume
           </Text>
           <Box
             h="800px"

@@ -115,7 +115,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       <SearchProvider>
         <Box minH="100vh" display="flex" flexDirection="column">
           <Header />
-          <Box as="main" flex="1" marginTop="84px">
+          <Box as="main" flex="1" marginTop="118px">
             {children}
           </Box>
           <Footer />
