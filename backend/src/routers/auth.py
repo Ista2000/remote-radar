@@ -399,7 +399,7 @@ async def update_user(
         user.preferred_roles = json.dumps(user_obj.preferred_roles) if user_obj.preferred_roles else user.preferred_roles
         user.preferred_locations = json.dumps(user_obj.preferred_locations) if user_obj.preferred_locations else user.preferred_locations
         user.preferred_sources = json.dumps(user_obj.preferred_sources) if user_obj.preferred_sources else user.preferred_sources
-        user.receive_email_alerts = user_obj.receive_email_alerts if user_obj.receive_email_alerts else user.receive_email_alerts
+        user.receive_email_alerts = user_obj.receive_email_alerts if user_obj.receive_email_alerts is not None else user.receive_email_alerts
 
         if resume and not isinstance(resume, str):
             user.resume_url = os.path.join("static", user.email, resume.filename)
