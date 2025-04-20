@@ -100,6 +100,18 @@ def test_login_wrong_password(client, db_with_user):
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
+def test_edit_user(client, db_with_user, token):
+    response = client.patch(
+        "/auth",
+        data={"updated_user": json.dumps({"full_name": "Updated Test User"})},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == status.HTTP_200_OK
+    user_dict = json.loads(response.content)
+    assert user_dict["email"] == "testuser@gmail.com"
+    assert user_dict["full_name"] == "Updated Test User"
+
+
 def test_expire_jobs(db):
     db.bulk_save_objects(
         [

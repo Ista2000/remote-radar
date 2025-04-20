@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 from ..src.deps import get_db
 from ..src.main import app
 from ..src.models import Base, User
-from ..src.utils import hash_password
+from ..src.utils import hash_password, verify_password
 
 
 @pytest.fixture(scope="function")
@@ -52,3 +52,22 @@ def db_with_user(db):
     yield db
     db.delete(user)
     db.commit()
+
+
+@pytest.fixture(scope="function")
+def token(client, db_with_user):
+    response = client.post(
+        "/auth/token",
+        data={
+            "username": "testuser@gmail.com",
+            "password": "Testpassword123",
+        },
+    )
+
+    user = db_with_user.query(User).filter(User.email == "testuser@gmail.com").first()
+    assert user is not None
+    assert user.email == "testuser@gmail.com"
+    assert verify_password("Testpassword123", user.hashed_password)
+    data = response.json()
+    assert "access_token" in data
+    yield data["access_token"]

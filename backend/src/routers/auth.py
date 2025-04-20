@@ -117,6 +117,78 @@ class UserCreateRequest(BaseModel):
         return v
 
 
+class UserUpdateRequest(BaseModel):
+    password: Optional[str] = None
+    repeat_password: Optional[str] = None
+    full_name: Optional[str] = None
+    experience_years: Optional[int] = None
+    preferred_roles: Optional[list[str]] = None
+    preferred_locations: Optional[list[str]] = None
+    preferred_sources: Optional[list[str]] = None
+    receive_email_alerts: Optional[bool] = None
+
+    @field_validator("password")
+    def validate_password(cls, password: Optional[str]):
+        if password is None:
+            return password
+        if len(password) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        if not re.search(r"[A-Z]", password):
+            raise ValueError("Password must include at least one uppercase letter")
+        if not re.search(r"[a-z]", password):
+            raise ValueError("Password must include at least one lowercase letter")
+        if not re.search(r"[0-9]", password):
+            raise ValueError("Password must include at least one digit")
+        return password
+
+    @field_validator("repeat_password")
+    def passwords_match(cls, repeat_password: Optional[str], info: ValidationInfo):
+        password = info.data.get("password")
+        if password and repeat_password != password:
+            raise ValueError("Passwords do not match.")
+        return repeat_password
+
+    @field_validator("full_name")
+    def validate_full_name(cls, v: Optional[str]):
+        if v is None:
+            return v
+        if len(v) == 0:
+            raise ValueError("Field required")
+        if " " not in v:
+            raise ValueError("Both first name and last name is required")
+        return v
+
+    @field_validator("preferred_roles")
+    def validate_preferred_roles(cls, v: Optional[list[str]]):
+        if v is None:
+            return v
+        invalid_roles = [role for role in v if role not in ROLES]
+        if invalid_roles:
+            raise ValueError(f"Invalid roles: {', '.join(invalid_roles)}")
+        return v
+
+    @field_validator("preferred_locations")
+    def validate_preferred_locations(cls, v: Optional[list[str]]):
+        if v is None:
+            return v
+        all_valid_locations = get_normalized_locations_list_string()
+        invalid_locations = [
+            location for location in v if location not in all_valid_locations
+        ]
+        if len(invalid_locations) > 0:
+            raise ValueError(f"Invalid locations: {', '.join(invalid_locations)}")
+        return v
+
+    @field_validator("preferred_sources")
+    def validate_preferred_sources(cls, v: Optional[list[str]]):
+        if v is None:
+            return v
+        invalid_sources = [source for source in v if source not in SOURCES]
+        if invalid_sources:
+            raise ValueError(f"Invalid sources: {', '.join(invalid_sources)}")
+        return v
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -267,6 +339,85 @@ async def create_user(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while creating the user.",
+        )
+
+
+@router.patch("/", status_code=status.HTTP_200_OK)
+async def update_user(
+    email: user_dependency,
+    db: db_dependency,
+    updated_user: Annotated[str, Form()],
+    resume: UploadFile | str = File(None),
+):
+    """Update current user's details"""
+    try:
+        user_obj = UserUpdateRequest.model_validate_json(updated_user)
+    except ValidationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=json.loads(e.json()),
+        )
+
+    user: User = db.query(User).filter(User.email == email["email"]).first()
+    resume_text = None
+    resume_file_path = None
+
+    if resume and not isinstance(resume, str):
+        if resume.content_type != "application/pdf":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only PDF files are supported for resumes",
+            )
+        try:
+            resume_file_path = os.path.join(
+                STATIC_DIR_PATH, user.email, resume.filename
+            )
+            os.makedirs(os.path.dirname(resume_file_path), exist_ok=True)
+            with open(resume_file_path, "wb") as f:
+                f.write(await resume.read())
+
+            with pdfplumber.open(resume_file_path) as pdf:
+                resume_text = re.sub(
+                    r"[\n\t\r]+",
+                    " ",
+                    "\n".join(page.extract_text() for page in pdf.pages),
+                )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to process the resume: {str(e)}",
+            )
+
+    if resume_text and len(user_obj.preferred_roles) > 0:
+        resume_text = json.dumps(
+            llm.extract_skills_from_resume(resume_text, user_obj.preferred_roles)
+        )
+
+    try:
+        user.full_name = user_obj.full_name or user.full_name
+        user.experience_years = user_obj.experience_years or user.experience_years
+        user.preferred_roles = json.dumps(user_obj.preferred_roles) if user_obj.preferred_roles else user.preferred_roles
+        user.preferred_locations = json.dumps(user_obj.preferred_locations) if user_obj.preferred_locations else user.preferred_locations
+        user.preferred_sources = json.dumps(user_obj.preferred_sources) if user_obj.preferred_sources else user.preferred_sources
+        user.receive_email_alerts = user_obj.receive_email_alerts if user_obj.receive_email_alerts else user.receive_email_alerts
+
+        if resume and not isinstance(resume, str):
+            user.resume_url = os.path.join("static", user.email, resume.filename)
+            user.resume_text = resume_text
+
+        db.commit()
+        db.refresh(user)
+
+        user_dict = jsonable_encoder(user)
+        user_dict.pop("hashed_password", None)
+        return user_dict
+
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error while updating user: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update user information.",
         )
 
 
