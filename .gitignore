@@ -21,14 +21,10 @@ wheels/
 *.egg
 
 # Virtual Environment
-.env
 .venv
 env/
 venv/
 ENV/
-
-# Poetry
-poetry.lock
 
 # IDE
 .idea/
@@ -52,6 +48,7 @@ coverage.xml
 *.log
 
 # Local development settings
+.env
 .env.local
 .env.development.local
 .env.test.local
