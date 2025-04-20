@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 import logging
 from typing import Optional
@@ -28,8 +29,8 @@ class JobModel(BaseModel):
     source: str = Field(description="Job source", examples=["LinkedIn"])
     role: str = Field(description="Job role", examples=["Software Engineer"])
 
-    salary_min: int = Field(description="Minimum salary offered", examples=[50000])
-    salary_max: int = Field(description="Maximum salary offered", examples=[200000])
+    salary_min: Optional[int] = Field(description="Minimum salary offered", examples=[50000])
+    salary_max: Optional[int] = Field(description="Maximum salary offered", examples=[200000])
     salary_currency: str = Field(description="Salary currency", examples=["USD"])
     salary_from_levels_fyi: bool = Field(
         description="Was salary information sourced from levels.fyi", examples=[False]
@@ -39,9 +40,9 @@ class JobModel(BaseModel):
     )
     remote: bool = Field(description="Is the job remote available", examples=[True])
 
-    posted_at: str = Field(
+    posted_at: datetime = Field(
         description="Time and date of posting (approx)",
-        examples=["2025-04-20 16:30:23.161919+00:00"],
+        examples=["2025-04-20T16:30:23.161919+00:00"],
     )
     is_active: bool = Field(description="Is the job active or expired", examples=[True])
 
@@ -81,7 +82,7 @@ def recommended_jobs(
 ):
     """Get all recommended jobs for the user based on their resume keywords"""
     resume_text_json = (
-        db.query(User.resume_text).filter(User.email == user["email"]).first()
+        db.query(User.resume_text).filter(User.email == user["email"]).first()[0]
     )
     if not resume_text_json:
         return {"NULL": db.query(Job).filter(Job.is_active == True).all()}
@@ -109,7 +110,6 @@ def recommended_jobs(
         Job.is_active == True,
     )
     url_to_job = {job.url: job for job in jobs}
-
     return {
         role: [url_to_job[url] for url in urls if url in url_to_job]
         for role, urls in role_to_urls.items()

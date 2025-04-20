@@ -59,6 +59,7 @@ coverage.xml
 
 # Database
 *.db
+chroma/
 
 # Static files
 static/

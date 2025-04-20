@@ -4,6 +4,7 @@ import traceback
 from typing import Annotated
 
 import chromadb
+import chromadb.config
 from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -23,8 +24,8 @@ SECRET_KEY = str(os.getenv("AUTH_SECRET_KEY", ""))
 ALGORITHM = str(os.getenv("AUTH_ALGORITHM", ""))
 
 llm = LLM()
-chromadb_client = chromadb.Client()
-job_collection = chromadb_client.create_collection(
+chromadb_client = chromadb.PersistentClient()
+job_collection = chromadb_client.get_or_create_collection(
     name="job_collection", metadata={"hnsw:space": "cosine"}
 )
 
