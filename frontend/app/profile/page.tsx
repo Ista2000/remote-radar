@@ -28,19 +28,28 @@ const UserProfile = () => {
   if (!user) return null;
 
   const renderBadgeList = (items: Array<string>, colorScheme: string) => {
-    return items
-      .filter((x) => x.trim())
-      .map((item) => (
-        <Badge
-          key={item.trim()}
-          colorScheme={colorScheme}
-          px={2}
-          py={1}
-          borderRadius="md"
-        >
-          {item.trim()}
-        </Badge>
-      ));
+    return items.length > 0 ?
+      items
+        .filter((x) => x.trim())
+        .map((item) => (
+          <Badge
+            key={item.trim()}
+            colorScheme={colorScheme}
+            px={2}
+            py={1}
+            borderRadius="md"
+          >
+            {item.trim()}
+          </Badge>
+        )) :
+      <Badge
+        colorScheme="red"
+        px={2}
+        py={1}
+        borderRadius="md"
+      >
+        None
+      </Badge>;
   };
 
   return (

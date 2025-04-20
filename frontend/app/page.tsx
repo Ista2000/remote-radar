@@ -71,7 +71,6 @@ const Home = () => {
           <Flex align="center" wrap="wrap" gap={2}>
             <Text fontSize="lg">Recommended </Text>
             <Select
-              top="4px"
               onChange={(e) => setSelectedRole(e.target.value)}
               width="auto"
               size="sm"

@@ -50,7 +50,7 @@ const Header = () => {
   const textColor = colorMode === "dark" ? "white" : "black";
 
   return (
-    <Box h="100px" as="header" bg="teal.600" color="white" px={6} py={4} boxShadow="md" position="fixed" w="100vw" zIndex={10}>
+    <Box h="100px" as="header" bg="teal.600" color="white" px={6} py={4} boxShadow="md" position="fixed" w="100vw" zIndex={10} alignContent="center">
       <Flex align="center" justify="space-between">
         <Text
           fontSize="xl"

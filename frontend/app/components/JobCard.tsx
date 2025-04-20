@@ -45,6 +45,28 @@ interface JobCardProps {
   job: JobType;
 }
 
+const currencyToLocale: Record<string, string> = {
+  USD: "en-US",
+  INR: "en-IN",
+  EUR: "de-DE",
+  GBP: "en-GB",
+  JPY: "ja-JP",
+  CNY: "zh-CN",
+  CAD: "en-CA",
+  AUD: "en-AU",
+  SGD: "en-SG",
+  // Add more as needed
+};
+
+const formatSalary = (amount: number, currency = "USD") => {
+  const locale = currencyToLocale[currency] || "en-US"; // fallback
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 0, // Optional: removes decimals
+  }).format(amount);
+}
+
 const JobCard = ({ job }: JobCardProps) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const bgSection = useColorModeValue("gray.50", "gray.700");
@@ -77,7 +99,7 @@ const JobCard = ({ job }: JobCardProps) => {
         </Text>
           <Text fontSize="sm" color="gray.500" mt={1}>
             {job.required_experience}+ yrs · {job.role}
-            { job.salary_currency && job.salary_min && job.salary_max && ` · ${job.salary_currency} ${job.salary_min} - ${job.salary_max}` }
+            { job.salary_currency && job.salary_min && job.salary_max && ` · ${formatSalary(job.salary_min, job.salary_currency)} - ${formatSalary(job.salary_max, job.salary_currency)}` }
           </Text>
         <Text fontSize="2xs" color="gray.500" mt={1}>
           From {job.source}
@@ -146,7 +168,7 @@ const JobCard = ({ job }: JobCardProps) => {
                           <Icon as={StarIcon} color="green.400" />
                           <Text fontWeight="medium" color={textColor}>Salary:</Text>
                           <Text color={textColor}>
-                            {job.salary_currency} {job.salary_min} - {job.salary_max}
+                            {formatSalary(job.salary_min, job.salary_currency)} - {formatSalary(job.salary_max, job.salary_currency)}
                           </Text>
                           {job.salary_from_levels_fyi && (
                             <Tooltip label="Salary information sourced from levels.fyi" hasArrow>
