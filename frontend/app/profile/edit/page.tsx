@@ -14,7 +14,6 @@ import {
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
-  Switch,
   useToast,
   Box,
   FormHelperText,
@@ -28,7 +27,6 @@ interface UserEdit {
   repeat_password?: string;
   full_name?: string;
   experience_years?: number;
-  receive_email_alerts?: boolean;
 }
 
 interface Errors {
@@ -37,7 +35,6 @@ interface Errors {
   repeat_password?: string;
   full_name?: string;
   experience_years?: string;
-  receive_email_alerts?: string;
 }
 
 interface ErrorDetail {
@@ -65,7 +62,6 @@ const EditUser = () => {
       setError(null);
       const formData = new FormData();
       formData.append("updated_user", JSON.stringify(user));
-      console.log(JSON.stringify(user));
       if (resume) {
         formData.append("resume", resume);
       }
@@ -87,7 +83,6 @@ const EditUser = () => {
     } catch (e) {
       if (axios.isAxiosError(e)) {
         const details = e.response?.data?.detail;
-        console.log(details);
         if (typeof details === "string") {
           setError({ all: details });
         } else {
@@ -107,7 +102,6 @@ const EditUser = () => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log(JSON.stringify(user));
     if (e.target.value === '') {
       setUser({ ...user, [e.target.name]: null });
     } else {
@@ -156,20 +150,6 @@ const EditUser = () => {
           </NumberInputStepper>
         </NumberInput>
         <FormErrorMessage>{error?.experience_years}</FormErrorMessage>
-      </FormControl>
-
-      <FormControl display="flex" alignItems="center" isInvalid={!!error?.receive_email_alerts}>
-        <FormLabel htmlFor="email-alerts" mb="0">
-          Enable email alerts?
-        </FormLabel>
-        <Switch
-          id="email-alerts"
-          isChecked={user?.receive_email_alerts || true}
-          onChange={() =>
-            setUser({ ...user, receive_email_alerts: !user?.receive_email_alerts })
-          }
-        />
-        <FormErrorMessage>{error?.receive_email_alerts}</FormErrorMessage>
       </FormControl>
 
       <Button colorScheme="teal" onClick={handleSubmit} isDisabled={loading}>

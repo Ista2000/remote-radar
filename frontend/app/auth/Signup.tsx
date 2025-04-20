@@ -129,7 +129,6 @@ const Signup = ({onSignupSuccess}: SignupProps) => {
         } else {
           setError(
             details.reduce((acc: Errors, detail: ErrorDetail) => {
-              console.log(detail);
               acc[detail.loc[0]] = detail.ctx?.error || detail.ctx?.reason || detail.msg;
               return acc;
             }, {} as Errors)

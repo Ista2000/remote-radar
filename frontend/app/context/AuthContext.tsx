@@ -10,6 +10,10 @@ export interface UserType {
   id: number;
   email: string;
   full_name: string;
+  preferred_roles: Array<string>;
+  preferred_locations: Array<string>;
+  preferred_sources: Array<string>;
+  receive_email_alerts?: boolean;
 };
 
 type AuthContextType = {
@@ -36,7 +40,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const response = await axios.get(
           `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth`,
         );
-        setUser(response.data);
+        setUser({
+          ...response.data,
+          preferred_roles: JSON.parse(response.data.preferred_roles),
+          preferred_locations: JSON.parse(response.data.preferred_locations),
+          preferred_sources: JSON.parse(response.data.preferred_sources),
+        });
       } catch (e) {
         if (window.location.pathname === "/auth") {
           return;
@@ -70,7 +79,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       );
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
       localStorage.setItem('token', response.data.access_token);
-      setUser(response.data.user);
+      setUser({
+        ...response.data.user,
+        preferred_roles: JSON.parse(response.data.user.preferred_roles),
+        preferred_locations: JSON.parse(response.data.user.preferred_locations),
+        preferred_sources: JSON.parse(response.data.user.preferred_sources),
+      });
       router.push('/');
       toast({
         title: 'Login success',
