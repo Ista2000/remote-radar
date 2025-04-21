@@ -72,31 +72,31 @@ def expire_jobs(db: Session) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager for the FastAPI app"""
-    # scheduler = BackgroundScheduler()
-    # logger.info("Starting background jobs scheduler...")
-    # db_gen = get_db()
-    # db = next(db_gen)  # Get the database session
-    # run_all_scrapers(db=db, scheduler=scheduler)
-    # scheduler.add_job(
-    #     mark_jobs_inactive,
-    #     args=[db],
-    #     trigger="interval",
-    #     seconds=60 * 60 * 24,  # Run everyday
-    # )
-    # scheduler.add_job(
-    #     expire_jobs,
-    #     args=[db],
-    #     trigger="interval",
-    #     seconds=60 * 60 * 24,  # Run everyday
-    # )
-    # try:
-    #     next(db_gen)  # Ensure the database session is yielded
-    # except StopIteration:
-    #     pass
-    # scheduler.start()
+    scheduler = BackgroundScheduler()
+    logger.info("Starting background jobs scheduler...")
+    db_gen = get_db()
+    db = next(db_gen)  # Get the database session
+    run_all_scrapers(db=db, scheduler=scheduler)
+    scheduler.add_job(
+        mark_jobs_inactive,
+        args=[db],
+        trigger="interval",
+        seconds=60 * 60 * 24,  # Run everyday
+    )
+    scheduler.add_job(
+        expire_jobs,
+        args=[db],
+        trigger="interval",
+        seconds=60 * 60 * 24,  # Run everyday
+    )
+    try:
+        next(db_gen)  # Ensure the database session is yielded
+    except StopIteration:
+        pass
+    scheduler.start()
     yield
-    # logger.info("Shutting down background jobs scheduler...")
-    # scheduler.shutdown()
+    logger.info("Shutting down background jobs scheduler...")
+    scheduler.shutdown()
 
 
 app = FastAPI(
