@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: 🐍 Backend Checks
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: remote_radar
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql+psycopg2://postgres:password@localhost:5432/remote_radar
+      AUTH_SECRET_KEY: supersecret
+      AUTH_ALGORITHM: HS256
+      GROQ_API_KEY: dummykey
+      LLM_MODELS: llama3
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          poetry install
+
+      - name: Run format, lint, type checks
+        run: |
+          cd backend
+          poetry run black --check src tests
+          poetry run ruff src tests
+          poetry run mypy src
+
+      - name: Run tests
+        run: |
+          cd backend
+          poetry run pytest
+
+  frontend:
+    name: 💻 Frontend Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm install
+
+      - name: Run lint
+        run: |
+          cd frontend
+          npm run lint
+
+      - name: Run build
+        run: |
+          cd frontend
+          npm run build
