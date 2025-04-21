@@ -4,7 +4,7 @@ import logging
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, Field
-from sqlalchemy import case
+from sqlalchemy import case, desc
 
 from ..deps import db_dependency, job_collection, user_dependency
 from ..models import Job, User
@@ -83,6 +83,12 @@ def recommended_jobs(
     role: Optional[str] = Query(
         None, description="Role filter to get recommended jobs"
     ),
+    sort_by: str = Query(
+        "relevance",
+        description="Sort by experience required (increasing or decreasing), "
+        "average salary or relevance (One of `relevance`, `salary`, `inc_experience`, `desc_experience)",
+        examples=["inc_experience"],
+    ),
 ):
     """Get all recommended jobs for the user based on their resume keywords"""
     resume_text = db.query(User.resume_text).filter(User.email == user["email"]).first()
@@ -112,14 +118,38 @@ def recommended_jobs(
             )["ids"],
         )
     )
-
-    jobs = db.query(Job).filter(
-        Job.url.in_(list(set(url for urls in role_to_urls.values() for url in urls))),
-        Job.is_active == True,
+    jobs = (
+        db.query(Job)
+        .filter(
+            Job.url.in_(
+                list(set(url for urls in role_to_urls.values() for url in urls))
+            ),
+            Job.is_active == True,
+        )
+        .all()
     )
     url_to_job = {job.url: job for job in jobs}
+
+    def sort_func(job: Job, role: str):
+        if sort_by == "desc_experience":
+            return int(job.required_experience)
+        elif sort_by == "inc_experience":
+            return 15 - int(job.required_experience)
+        elif sort_by == "salary":
+            return (
+                (int(job.salary_min) + int(job.salary_max)) / 2
+                if job.salary_min and job.salary_max
+                else 0
+            )
+        else:
+            return len(role_to_urls) - role_to_urls[role].index(job.url)
+
     return {
-        role: [url_to_job[url] for url in urls if url in url_to_job]
+        role: sorted(
+            [url_to_job[url] for url in urls if url in url_to_job],
+            key=lambda job: sort_func(job, role),
+            reverse=True,
+        )
         for role, urls in role_to_urls.items()
     }
 
@@ -161,10 +191,17 @@ def search_jobs(
     max_experience_years: Optional[int] = Query(
         None, description="Maximum years of experience required", examples=[10, 11, 12]
     ),
+    sort_by: str = Query(
+        "relevance",
+        description="Sort by experience required (increasing or decreasing), "
+        "average salary or relevance (One of `relevance`, `salary`, `inc_experience`, `desc_experience)",
+        examples=["inc_experience"],
+    ),
 ):
     """Search for jobs based on the provided search query and optional filters"""
     # Extract job URLs from the job collection
     job_listings = db.query(Job)
+    ordering = None
     if search_query:
         job_urls = list(
             job_collection.query(
@@ -176,11 +213,15 @@ def search_jobs(
         ordering = case({val: idx for idx, val in enumerate(job_urls)}, value=Job.url)
         # Query jobs table for job listings with given
         # job urls filtered by the optional filters with ordering
-        job_listings = job_listings.filter(
-            Job.url.in_(job_urls), Job.is_active == True
-        ).order_by(ordering)
-    logger.info(min_experience_years)
-    logger.info(max_experience_years)
+        job_listings = job_listings.filter(Job.url.in_(job_urls), Job.is_active == True)
+    if sort_by == "inc_experience":
+        job_listings = job_listings.order_by(Job.required_experience)
+    if sort_by == "desc_experience":
+        job_listings = job_listings.order_by(desc(Job.required_experience))
+    elif sort_by == "salary":
+        job_listings = job_listings.order_by(desc((Job.salary_min + Job.salary_max) / 2))
+    else:
+        job_listings = job_listings.order_by(ordering)
     if location:
         job_listings = job_listings.filter(Job.location == location)
     if source:
@@ -188,9 +229,13 @@ def search_jobs(
     if role:
         job_listings = job_listings.filter(Job.role == role)
     if min_experience_years is not None:
-        job_listings = job_listings.filter(Job.required_experience >= min_experience_years)
+        job_listings = job_listings.filter(
+            Job.required_experience >= min_experience_years
+        )
     if max_experience_years is not None:
-        job_listings = job_listings.filter(Job.required_experience <= max_experience_years)
+        job_listings = job_listings.filter(
+            Job.required_experience <= max_experience_years
+        )
     if remote:
         job_listings = job_listings.filter(Job.remote == True)
 
