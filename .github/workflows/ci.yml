@@ -30,7 +30,7 @@ jobs:
       AUTH_SECRET_KEY: supersecret
       AUTH_ALGORITHM: HS256
       GROQ_API_KEY: dummykey
-      LLM_MODELS: llama3
+      LLM_MODELS: '["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]'
 
     steps:
       - uses: actions/checkout@v4
@@ -38,7 +38,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.9"
+          python-version: "3.10"
 
       - name: Install Poetry
         run: pip install poetry
@@ -52,7 +52,7 @@ jobs:
         run: |
           cd backend
           poetry run black --check src tests
-          poetry run mypy src
+          poetry run mypy src --install-types --non-interactive --ignore-missing-imports
 
       - name: Run tests
         run: |

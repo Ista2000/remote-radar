@@ -47,7 +47,7 @@ class LLM:
 
     def __init__(self) -> None:
         self.llms = [
-            ChatGroq(
+            ChatGroq(  # type: ignore[call-arg]
                 temperature=0,
                 groq_api_key=GROQ_API_KEY,
                 model_name=model_name,
@@ -64,7 +64,10 @@ class LLM:
         for idx, llm in enumerate(self.llms):
             try:
                 chain = (
-                    PromptTemplate(template=EXTRACT_JOB_FROM_PAGE_DATA_TEMPLATE)
+                    PromptTemplate(
+                        template=EXTRACT_JOB_FROM_PAGE_DATA_TEMPLATE,
+                        input_variables=["page_data", "source"],
+                    )
                     | llm
                     | PydanticOutputParser(pydantic_object=Job)
                 )
@@ -100,7 +103,10 @@ class LLM:
         for llm in self.llms:
             try:
                 return (
-                    PromptTemplate(template=EXTRACT_KEYWORDS_FROM_RESUME_TEMPLATE)
+                    PromptTemplate(
+                        template=EXTRACT_KEYWORDS_FROM_RESUME_TEMPLATE,
+                        input_variables=["resume_data", "roles"],
+                    )
                     | llm
                     | JsonOutputParser()
                 ).invoke(

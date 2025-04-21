@@ -85,9 +85,13 @@ def recommended_jobs(
     ),
 ):
     """Get all recommended jobs for the user based on their resume keywords"""
-    resume_text_json = (
-        db.query(User.resume_text).filter(User.email == user["email"]).first()[0]
-    )
+    resume_text = db.query(User.resume_text).filter(User.email == user["email"]).first()
+    if resume_text is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"User not authenticated",
+        )
+    resume_text_json = resume_text[0]
     if not resume_text_json:
         return {"NULL": db.query(Job).filter(Job.is_active == True).all()}
 

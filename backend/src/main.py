@@ -43,7 +43,7 @@ def mark_jobs_inactive(db: Session) -> None:
         )
 
         for job in old_jobs:
-            job.is_active = False
+            job.is_active = False  # type: ignore[assignment]
         db.commit()
         print(f"{len(old_jobs)} jobs marked as inactive.")
     except Exception as e:
@@ -60,7 +60,7 @@ def expire_jobs(db: Session) -> None:
         for job in old_jobs:
             db.delete(job)
         db.commit()
-        job_collection.delete(ids=[job.url for job in old_jobs])
+        job_collection.delete(ids=[str(job.url) for job in old_jobs])
         print(f"{len(old_jobs)} jobs deleted.")
     except Exception as e:
         print(f"Error marking old jobs inactive: {e}")

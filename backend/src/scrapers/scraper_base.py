@@ -88,12 +88,15 @@ class ScraperBase:
             headers = {"User-Agent": "Mozilla/5.0"}
             response = requests.get(url, headers=headers)
             soup = BeautifulSoup(response.text, "html.parser")
-            page_data = soup.find("div", class_="top-card-layout__card").get_text(
-                strip=True, separator=" "
-            )
-            page_data += soup.find(
+            soup_find = soup.find("div", class_="top-card-layout__card")
+            page_data = ""
+            if soup_find:
+                page_data += soup_find.get_text(strip=True, separator=" ")
+            soup_find = soup.find(
                 "div", class_="description__text description__text--rich"
-            ).get_text(strip=True, separator=" ")
+            )
+            if soup_find:
+                page_data += soup_find.get_text(strip=True, separator=" ")
             company = self.parse_job_company(soup)
             job_details = {
                 **self.infer_job_details(page_data, company, location),

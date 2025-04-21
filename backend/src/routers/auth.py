@@ -233,10 +233,10 @@ class Token(BaseModel):
 
 def authenticate_user(username: str, password: str, db: Session) -> Optional[User]:
     """Authenticate user with username and password"""
-    user: User = db.query(User).filter(User.email == username).first()
+    user = db.query(User).filter(User.email == username).first()
     if not user:
         return None
-    if not verify_password(password, user.hashed_password):
+    if not verify_password(password, str(user.hashed_password)):
         return None
     return user
 
@@ -260,7 +260,7 @@ def create_access_token(
     response_description="User data for myself",
 )
 def get_myself(email: user_dependency, db: db_dependency):
-    user: User = db.query(User).filter(User.email == email["email"]).first()
+    user = db.query(User).filter(User.email == email["email"]).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not authenticated"
@@ -276,7 +276,7 @@ def get_myself(email: user_dependency, db: db_dependency):
     response_description="User data for the the user with given email.",
 )
 def get_user(email: user_dependency, db: db_dependency, user_email: str):
-    user: User = db.query(User).filter(User.email == user_email).first()
+    user = db.query(User).filter(User.email == user_email).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
@@ -314,6 +314,11 @@ async def create_user(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Only PDF files are supported for resumes",
+            )
+        if not resume.filename:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Resume filename not specified",
             )
         try:
             # Save the file to the uploads directory
@@ -355,7 +360,9 @@ async def create_user(
             is_admin=False,
             resume_url=(
                 os.path.join("static", user_obj.email, resume.filename)
-                if resume and not isinstance(resume, str)
+                if resume
+                and not isinstance(resume, str)
+                and resume.filename is not None
                 else None
             ),
             resume_text=resume_text,
@@ -468,7 +475,11 @@ async def update_user(
             detail=json.loads(e.json()),
         )
 
-    user: User = db.query(User).filter(User.email == email["email"]).first()
+    user = db.query(User).filter(User.email == email["email"]).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not authenticated"
+        )
     resume_text = None
     resume_file_path = None
 
@@ -479,6 +490,11 @@ async def update_user(
                 detail="Only PDF files are supported for resumes",
             )
         try:
+            if not resume.filename:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Resume filename not specified",
+                )
             resume_file_path = os.path.join(
                 STATIC_DIR_PATH, user.email, resume.filename
             )
@@ -504,32 +520,41 @@ async def update_user(
         )
 
     try:
-        user.full_name = user_obj.full_name or user.full_name
-        user.experience_years = user_obj.experience_years or user.experience_years
+        user.full_name = (
+            user_obj.full_name  # type: ignore[assignment]
+            if user_obj.full_name is not None
+            else user.full_name
+        )
+        user.experience_years = (
+            user_obj.experience_years  # type: ignore[assignment]
+            if user_obj.experience_years is not None
+            else user.experience_years
+        )
         user.preferred_roles = (
-            json.dumps(user_obj.preferred_roles)
+            json.dumps(user_obj.preferred_roles)  # type: ignore[assignment]
             if user_obj.preferred_roles
             else user.preferred_roles
         )
         user.preferred_locations = (
-            json.dumps(user_obj.preferred_locations)
+            json.dumps(user_obj.preferred_locations)  # type: ignore[assignment]
             if user_obj.preferred_locations
             else user.preferred_locations
         )
         user.preferred_sources = (
-            json.dumps(user_obj.preferred_sources)
+            json.dumps(user_obj.preferred_sources)  # type: ignore[assignment]
             if user_obj.preferred_sources
             else user.preferred_sources
         )
         user.receive_email_alerts = (
-            user_obj.receive_email_alerts
+            user_obj.receive_email_alerts  # type: ignore[assignment]
             if user_obj.receive_email_alerts is not None
             else user.receive_email_alerts
         )
 
-        if resume and not isinstance(resume, str):
-            user.resume_url = os.path.join("static", user.email, resume.filename)
-            user.resume_text = resume_text
+        if resume and not isinstance(resume, str) and resume.filename:
+            user.resume_url = os.path.join("static", user.email, resume.filename)  # type: ignore[assignment]
+            if resume_text:
+                user.resume_text = resume_text  # type: ignore[assignment]
 
         db.commit()
         db.refresh(user)
@@ -555,5 +580,5 @@ def login_for_access_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
         )
-    access_token = create_access_token(email=user.email)
+    access_token = create_access_token(email=str(user.email))
     return {"access_token": access_token, "token_type": "bearer", "user": user}
