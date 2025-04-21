@@ -15,6 +15,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "axios": "^1.8.4",
+    "clsx": "^2.1.1",
     "framer-motion": "^12.7.4",
     "next": "15.3.0",
     "react": "^19.0.0",
@@ -29,6 +30,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.3.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "tailwind-merge": "^3.2.0"
   }
 }

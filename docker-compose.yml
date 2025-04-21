@@ -1,0 +1,42 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    # volumes:  # Uncomment if you want your localfiles to be used.
+      # - ./backend:/app
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_BACKEND_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./frontend/.env.local
+    # volumes:  # Uncomment if you want your localfiles to be used.
+    #   - ./frontend:/app
+    depends_on:
+      - backend
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: remote_radar
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:

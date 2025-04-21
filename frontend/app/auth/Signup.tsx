@@ -86,13 +86,17 @@ const Signup = ({onSignupSuccess}: SignupProps) => {
 
   useEffect(() => {
     const fetchRLS = async () => {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/rls/`);
-      setRls({
-        roles: response?.data?.roles,
-        locations: response?.data?.locations,
-        sources: response?.data?.sources,
-      })
-      setLoading(false);
+      try {
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/rls/`);
+        setRls({
+          roles: response?.data?.roles,
+          locations: response?.data?.locations,
+          sources: response?.data?.sources,
+        })
+        setLoading(false);
+      } catch (e) {
+        console.log(e);
+      }
     };
     fetchRLS();
   }, []);

@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from .constants import EXPIRE_JOBS_AFTER_DAYS, STATIC_DIR_PATH
 from .database import engine
-from .deps import get_db, job_collection
+from .deps import job_collection
 from .models import Base, Job
 from .routers import auth, job, rls
 from .scrapers.scraper_factory import ScraperFactory
@@ -113,7 +113,7 @@ Base.metadata.create_all(bind=engine)  # Create database tables
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Allow requests from this origin
+    allow_origins=["http://localhost:3000", "http://frontend:3000"],  # Allow requests from this origin
     allow_credentials=True,
     allow_methods=["*"],  # Allow all methods
     allow_headers=["*"],  # Allow all headers
