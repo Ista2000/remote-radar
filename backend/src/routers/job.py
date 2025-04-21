@@ -155,8 +155,11 @@ def search_jobs(
     remote: bool = Query(
         False, description="Filter by remote preference", examples=[True, False]
     ),
-    experience_years: Optional[int] = Query(
-        None, description="Minimum years of experience", examples=[1, 2, 3]
+    min_experience_years: Optional[int] = Query(
+        None, description="Minimum years of experience required", examples=[1, 2, 3]
+    ),
+    max_experience_years: Optional[int] = Query(
+        None, description="Maximum years of experience required", examples=[10, 11, 12]
     ),
 ):
     """Search for jobs based on the provided search query and optional filters"""
@@ -176,14 +179,18 @@ def search_jobs(
         job_listings = job_listings.filter(
             Job.url.in_(job_urls), Job.is_active == True
         ).order_by(ordering)
+    logger.info(min_experience_years)
+    logger.info(max_experience_years)
     if location:
         job_listings = job_listings.filter(Job.location == location)
     if source:
         job_listings = job_listings.filter(Job.source == source)
     if role:
         job_listings = job_listings.filter(Job.role == role)
-    if experience_years is not None:
-        job_listings = job_listings.filter(Job.required_experience <= experience_years)
+    if min_experience_years is not None:
+        job_listings = job_listings.filter(Job.required_experience >= min_experience_years)
+    if max_experience_years is not None:
+        job_listings = job_listings.filter(Job.required_experience <= max_experience_years)
     if remote:
         job_listings = job_listings.filter(Job.remote == True)
 
