@@ -1,14 +1,16 @@
 "use client"
 import { Container, Divider, Flex, Select, Skeleton, Text, useToast } from "@chakra-ui/react";
 import { AuthProvider } from "./context/AuthContext";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import JobCard, { JobType } from "./components/JobCard";
 import { FilterType, useSearchContext } from "./context/SearchContext";
+import { useDebounce } from "./hooks/useDebounce";
 
 const filterNotSet = (filter: FilterType): boolean => {
-  return !filter.location && !filter.experience && !filter.remote && !filter.role && !filter.source;
+  return !filter.location && !filter.min_experience && !filter.max_experience && !filter.remote && !filter.role && !filter.source;
 }
+
 
 const Home = () => {
   const { searchTerm, filters } = useSearchContext();
@@ -18,9 +20,12 @@ const Home = () => {
   const jobs = jobsWithRole ? jobsWithRole[selectedRole] : null;
   const roles = jobsWithRole ? Object.keys(jobsWithRole) : [];
   const toast = useToast();
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     setLoading(true);
+    const currentIdRef = ++requestIdRef.current;
     const fetchJobs = async () => {
       try {
         let searchQuery = '';
@@ -36,8 +41,11 @@ const Home = () => {
         if (filters.role) {
           searchQuery += `role=${encodeURIComponent(filters.role)}&`;
         }
-        if (filters.experience) {
-          searchQuery += `experience_years=${filters.experience}&`;
+        if (filters.min_experience) {
+          searchQuery += `min_experience_years=${filters.min_experience}&`;
+        }
+        if (filters.max_experience) {
+          searchQuery += `max_experience_years=${filters.max_experience}&`;
         }
         if (filters.remote) {
           searchQuery += `remote=true&`;
@@ -46,31 +54,34 @@ const Home = () => {
           ? `/job/search?${searchQuery}`
           : "/job/recommended";
         const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}${endpoint}`);
-        setJobsWithRole(response.data);
-        setSelectedRole(Object.keys(response.data)[0]);
-        setLoading(false);
+        if (currentIdRef === requestIdRef.current) {
+          setJobsWithRole(response.data);
+          setSelectedRole(Object.keys(response.data)[0]);
+          setLoading(false);
+        }
       } catch (e) {
-        console.log(e);
-        toast({
-          position: "top-right",
-          title: 'Cannot fetch jobs',
-          description: "Some unexpected error occured. Please reload the page.",
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
+        if (currentIdRef === requestIdRef.current) {
+          console.log(e);
+          toast({
+            position: "top-right",
+            title: 'Cannot fetch jobs',
+            description: "Some unexpected error occured. Please reload the page.",
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+          });
+        }
       }
     };
 
     fetchJobs();
-  }, [searchTerm, filters]);
-
+  }, [debouncedSearchTerm, filters]);
   return (
     <Container alignItems="center" margin="1% 15%" width="70%" maxWidth="100%">
         { searchTerm === "" ? ( selectedRole === "" ? <Text fontSize="lg">Recommended jobs according to your resume</Text> :
           <Flex align="center" wrap="wrap" gap={2}>
             <Text fontSize="lg">Recommended </Text>
-            <Select
+            {roles && <Select
               onChange={(e) => setSelectedRole(e.target.value)}
               width="auto"
               size="sm"
@@ -80,13 +91,13 @@ const Home = () => {
                   {role}
                 </option>
               ))}
-            </Select>
+            </Select>}
             <Text fontSize="lg"> jobs according to your resume</Text>
           </Flex>
         ) : (
           <Flex align="center" wrap="wrap" gap={2}>
-            <Text size="lg">Search results for </Text>
-            <Select
+            <Text fontSize="lg">Search results for </Text>
+            {roles && <Select
               top="4px"
               onChange={(e) => setSelectedRole(e.target.value)}
               width="auto"
@@ -97,8 +108,8 @@ const Home = () => {
                   {role}
                 </option>
               ))}
-            </Select>
-            <Text size="lg"> jobs matching &ldquo;{searchTerm}&rdquo;</Text>
+            </Select>}
+            <Text fontSize="lg"> jobs matching &ldquo;{searchTerm}&rdquo;</Text>
           </Flex>
         )}
       <Divider margin="24px 0"/>
@@ -109,21 +120,21 @@ const Home = () => {
                 p={4}
                 borderRadius="2xl"
                 margin="24px 0"
-                isLoaded={!!jobs}
+                isLoaded={!loading}
                 height="137px"
               />
               <Skeleton
                 p={4}
                 borderRadius="2xl"
                 margin="24px 0"
-                isLoaded={!!jobs}
+                isLoaded={!loading}
                 height="137px"
               />
               <Skeleton
                 p={4}
                 borderRadius="2xl"
                 margin="24px 0"
-                isLoaded={!!jobs}
+                isLoaded={!loading}
                 height="137px"
               />
             </>

@@ -5,7 +5,8 @@ export type FilterType = {
   location: string | null;
   role: string | null;
   source: string | null;
-  experience: number | null;
+  min_experience: number;
+  max_experience: number | null;
   remote: boolean;
 };
 
@@ -24,7 +25,8 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
     location: null,
     role: null,
     source: null,
-    experience: null,
+    min_experience: 0,
+    max_experience: null,
     remote: false,
   });
 

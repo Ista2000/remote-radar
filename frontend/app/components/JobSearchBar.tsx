@@ -19,6 +19,10 @@ import {
   useColorModeValue,
   HStack,
   Button,
+  RangeSlider,
+  RangeSliderTrack,
+  RangeSliderThumb,
+  RangeSliderFilledTrack,
 } from "@chakra-ui/react";
 import { SearchIcon, ChevronDownIcon, SettingsIcon } from "@chakra-ui/icons";
 import { useEffect, useState } from "react";
@@ -120,19 +124,20 @@ const JobSearchBar = () => {
 
             {/* Experience Slider */}
             <Box w="100%">
-              <Text fontSize="sm" mb={1}>Experience (yrs): {filters.experience ? filters.experience : "15+"}</Text>
-              <Slider
-                aria-label="experience-slider"
-                value={filters.experience ? filters.experience : 15}
-                onChange={(val) => setFilters({ ...filters, experience: val === 15 ? null : val })}
+              <Text fontSize="sm" mb={1}>Experience (yrs): {filters.min_experience} - {filters.max_experience ? filters.max_experience : "15+"}</Text>
+              <RangeSlider
+                aria-label={["experience-slider-min", "experience-slider-max"]}
+                onChangeEnd={([min_val, max_val]) => setFilters({ ...filters,  min_experience: min_val, max_experience: max_val === 15 ? null : max_val })}
+                defaultValue={[0, 15]}
                 min={0}
                 max={15}
               >
-                <SliderTrack>
-                  <SliderFilledTrack bg="teal.400" />
-                </SliderTrack>
-                <SliderThumb />
-              </Slider>
+                <RangeSliderTrack>
+                  <RangeSliderFilledTrack bg="teal.400" />
+                </RangeSliderTrack>
+                <RangeSliderThumb index={0}/>
+                <RangeSliderThumb index={1}/>
+              </RangeSlider>
             </Box>
 
             {/* Remote Switch */}
@@ -153,7 +158,8 @@ const JobSearchBar = () => {
                 location: null,
                 role: null,
                 source: null,
-                experience: null,
+                min_experience: 0,
+                max_experience: null,
                 remote: false,
               })}
             >
