@@ -37,18 +37,15 @@ import {
 } from "@chakra-ui/icons";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "../hooks/useAuth";
-import { useSearchContext } from "../context/SearchContext";
 import JobSearchBar from "./JobSearchBar";
 
 const Header = () => {
   const router = useRouter();
   const { user, logout } = useAuthContext();
-  const { searchTerm, setSearchTerm } = useSearchContext();
   const { colorMode, toggleColorMode } = useColorMode();
   const { isOpen, onToggle } = useDisclosure();
   const isMobile = useBreakpointValue({ base: true, md: false });
   const textColor = colorMode === "dark" ? "white" : "black";
-
   return (
     <Box h="100px" as="header" bg="teal.600" color="white" px={6} py={4} boxShadow="md" position="fixed" w="100vw" zIndex={10} alignContent="center">
       <Flex align="center" justify="space-between">
@@ -74,7 +71,7 @@ const Header = () => {
           />
         ) : (
           <>
-            {user && <JobSearchBar />}
+            {user && window.location.pathname === '/' && <JobSearchBar margin="0 48px" w="50vw"/>}
             <Spacer />
             <Flex align="center" gap={2} mr={4}>
               <Icon as={colorMode === "light" ? SunIcon : MoonIcon} color={colorMode === "light" ? "orange.400" : "blue.300"} />
@@ -117,44 +114,35 @@ const Header = () => {
 
       {/* Mobile dropdown */}
       <Collapse in={isOpen} animateOpacity>
-        <Stack mt={4} spacing={4} display={{ md: "none" }}>
-          {user && (
-            <InputGroup borderRadius="xl">
-              <InputLeftElement pointerEvents="none">
-                <SearchIcon color="gray.300" />
-              </InputLeftElement>
-              <Input
-                type="text"
-                placeholder="Search jobs..."
-                bg="gray.700"
-                color="white"
-                borderRadius="xl"
-                onChange={(e) => setSearchTerm(e.target.value)}
-                value={searchTerm}
-              />
-              {searchTerm && (
-                <InputRightElement cursor="pointer" onClick={() => setSearchTerm("")}>
-                  <Text fontSize="lg" fontWeight="bold" color="gray.400" _hover={{ color: "red.400" }}>
-                    ×
-                  </Text>
-                </InputRightElement>
-              )}
-            </InputGroup>
-          )}
+        <Stack left={0} position="fixed" padding="20px" backgroundColor={colorMode === 'dark' ? "gray.900" : "gray.200"} w="100%" mt={4} spacing={4} display={{ md: "none" }}>
 
-          <Flex align="center" justify="space-between" mt="8px">
-            <Text fontSize="lg" mr="8px">
-              {colorMode === "light" ? <SunIcon color="orange.400" /> : <MoonIcon color="blue.300" />}
-            </Text>
-            <Switch
-              colorScheme="teal"
-              isChecked={colorMode === "dark"}
-              onChange={toggleColorMode}
-              aria-label="Toggle dark mode"
-              size="lg"
-            />
-            <Spacer />
-          </Flex>
+          {user && <>
+            <HStack padding="12px">
+              <Avatar name={user.full_name} size="xl" />
+              <VStack align="start" spacing={0}>
+                <Text color={textColor} fontSize="2xl">{user.full_name}</Text>
+                <Link href="/profile/edit" fontSize="sm" color="teal.500">Edit profile</Link>
+              </VStack>
+              <Flex align="center" justify="space-between" mt="8px">
+                <Text fontSize="lg" mr="8px">
+                  {colorMode === "light" ? <SunIcon color="orange.400" /> : <MoonIcon color="blue.300" />}
+                </Text>
+                <Switch
+                  colorScheme="teal"
+                  isChecked={colorMode === "dark"}
+                  onChange={toggleColorMode}
+                  aria-label="Toggle dark mode"
+                  size="lg"
+                />
+                <Spacer />
+              </Flex>
+            </HStack>
+            {window.location.pathname === '/' && <>
+              <Divider m="24px 0"/>
+              <JobSearchBar w="100%" />
+              <Divider m="24px 0"/>
+            </>}
+          </>}
 
           {user ? (
             <>

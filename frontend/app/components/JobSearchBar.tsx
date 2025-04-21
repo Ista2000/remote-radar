@@ -9,10 +9,6 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
-  Slider,
-  SliderTrack,
-  SliderFilledTrack,
-  SliderThumb,
   Switch,
   Text,
   VStack,
@@ -23,13 +19,14 @@ import {
   RangeSliderTrack,
   RangeSliderThumb,
   RangeSliderFilledTrack,
+  FlexProps,
 } from "@chakra-ui/react";
 import { SearchIcon, ChevronDownIcon, SettingsIcon } from "@chakra-ui/icons";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useSearchContext } from "../context/SearchContext";
 
-const JobSearchBar = () => {
+const JobSearchBar = (props: FlexProps) => {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const { searchTerm, filters, setSearchTerm, setFilters } = useSearchContext();
   const textColor = useColorModeValue("gray.800", "gray.100");
@@ -51,17 +48,16 @@ const JobSearchBar = () => {
 
   return (
     <Flex
+      {...props}
       align="center"
       alignSelf="center"
       justify="space-between"
-      w="50vw"
       px={6}
       py={3}
       bg={useColorModeValue("whiteAlpha.900", "gray.800")}
       borderBottom="1px solid"
       borderColor={useColorModeValue("gray.200", "whiteAlpha.200")}
       borderRadius="lg"
-      margin="0 48px"
       color={textColor}
     >
       {/* Search Input */}
