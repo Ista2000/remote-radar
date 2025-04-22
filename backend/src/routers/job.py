@@ -1,6 +1,7 @@
 from datetime import datetime
 import json
 import logging
+import traceback
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Query, status
 from groq import RateLimitError
@@ -220,7 +221,9 @@ def search_jobs(
     if sort_by == "desc_experience":
         job_listings = job_listings.order_by(desc(Job.required_experience))
     elif sort_by == "salary":
-        job_listings = job_listings.order_by(desc((Job.salary_min + Job.salary_max) / 2))
+        job_listings = job_listings.order_by(
+            desc((Job.salary_min + Job.salary_max) / 2)
+        )
     else:
         job_listings = job_listings.order_by(ordering)
     if location:
@@ -246,6 +249,7 @@ def search_jobs(
         for role in set(job.role for job in jobs)
     )
 
+
 @router.get(
     "/generate-cover",
     response_model=str,
@@ -260,12 +264,26 @@ def generate_cover(
     job_url: str = Query(
         description="Job URL for which to generate a cover letter for.",
         examples=["inc_experience"],
-    )
+    ),
 ):
     logger.info(job_url)
     try:
-        company, job_description, role = db.query(Job.company, Job.description, Job.role).filter(Job.url == job_url).first().tuple()
-        user_resume_data, name = db.query(User.resume_text, User.full_name).filter(User.email == user["email"]).first().tuple()
+        job_info = (
+            db.query(Job.company, Job.description, Job.role)
+            .filter(Job.url == job_url)
+            .first()
+        )
+        if job_info is None:
+            raise ValueError("Job with specified URL does not exist.")
+        company, job_description, role = job_info.tuple()
+        user_info = (
+            db.query(User.resume_text, User.full_name)
+            .filter(User.email == user["email"])
+            .first()
+        )
+        if user_info is None:
+            raise ValueError("User not authenticated.")
+        user_resume_data, name = user_info.tuple()
         return llm.generate_cover_letter(
             resume_data=json.loads(user_resume_data)[role],
             company=company,
@@ -275,10 +293,11 @@ def generate_cover(
     except RateLimitError as e:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            details="Hit rate limit for the LLM models on the server"
+            detail="Hit rate limit for the LLM models on the server",
         )
     except Exception as e:
+        logger.error(f"Error trying to generate cover letter: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            details="Something went wrong",
+            detail="Something went wrong",
         )

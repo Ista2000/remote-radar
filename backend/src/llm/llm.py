@@ -4,7 +4,11 @@ import os
 import traceback
 from typing import Optional
 from dotenv import load_dotenv
-from langchain_core.output_parsers import PydanticOutputParser, JsonOutputParser, StrOutputParser
+from langchain_core.output_parsers import (
+    PydanticOutputParser,
+    JsonOutputParser,
+    StrOutputParser,
+)
 from langchain_core.prompts import PromptTemplate
 from langchain_groq import ChatGroq
 from groq import RateLimitError
@@ -130,18 +134,30 @@ class LLM:
                 return {}
         return {}
 
-    def generate_cover_letter(self, resume_data: str, job_description: str, company: str, name: str):
+    def generate_cover_letter(
+        self, resume_data: str, job_description: str, company: str, name: str
+    ):
         for idx, llm in enumerate(self.llms):
             try:
                 return (
                     PromptTemplate(
                         template=GENERATE_COVER_LETTER_TEMPLATE,
-                        input_variables=["resume_data", "job_description", "name", "company"],
+                        input_variables=[
+                            "resume_data",
+                            "job_description",
+                            "name",
+                            "company",
+                        ],
                     )
                     | llm
                     | StrOutputParser()
                 ).invoke(
-                    {"resume_data": resume_data, "job_description": job_description, "name": name, "company": company}
+                    {
+                        "resume_data": resume_data,
+                        "job_description": job_description,
+                        "name": name,
+                        "company": company,
+                    }
                 )
             except RateLimitError as e:
                 if idx == len(self.llms) - 1:
