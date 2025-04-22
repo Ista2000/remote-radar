@@ -84,6 +84,8 @@ class ScraperBase:
 
     def parse_job_details(self, url: str, location: str):
         logger.info(f"Parsing job details from {url}...")
+        logger.info(f"Sleeping for 10 seconds before starting to scrape")
+        time.sleep(10)
         try:
             headers = {"User-Agent": "Mozilla/5.0"}
             response = requests.get(url, headers=headers)
