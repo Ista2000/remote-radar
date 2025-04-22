@@ -16,7 +16,7 @@ Modify the `description` as an HTML document by adding <h1> tags, A LOT OF <b>, 
 
 
 EXTRACT_KEYWORDS_FROM_RESUME_TEMPLATE = """
-### USER RESUME DATA
+### USER RESUME DATA:
 {resume_data}
 ### INSTRUCTION:
 The user resume text is provided parsed using a pdfplumber.
@@ -26,4 +26,21 @@ The output should be a one line json representing role as key and keywords as va
 The values should contain at most 100 and at least 5 unique keywords ranked from most relevant to least.
 ### VALID JSON (NO PREAMBLE)
 ### DO NOT OUTPUT ANYTHING APART FROM JSON OBJECT
+"""
+
+GENERATE_COVER_LETTER_TEMPLATE = """
+### USER RESUME DATA:
+{resume_data}
+
+### JOB DESCRIPTION:
+{job_description}
+
+### MY NAME IS {name}
+
+### INSTRUCTION:
+Generate a personalized cover letter email for a recruiter from {company} regarding a job opening whose job description is provided above.
+The cover letter should be personalized using the resume data and job description.
+The cover letter should have less than 200 words.
+
+### NO PREAMBLE
 """

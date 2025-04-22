@@ -3,10 +3,11 @@ import json
 import logging
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Query, status
+from groq import RateLimitError
 from pydantic import BaseModel, Field
 from sqlalchemy import case, desc
 
-from ..deps import db_dependency, job_collection, user_dependency
+from ..deps import db_dependency, job_collection, llm, user_dependency
 from ..models import Job, User
 
 router = APIRouter(
@@ -244,3 +245,40 @@ def search_jobs(
         (role, list(job for job in jobs if job.role == role))
         for role in set(job.role for job in jobs)
     )
+
+@router.get(
+    "/generate-cover",
+    response_model=str,
+    summary="Generate cover letter",
+    description="Generates and returns cover letter for a particular job "
+    "based on job description and the resume data of the user",
+    response_description="String representing cover letter.",
+)
+def generate_cover(
+    user: user_dependency,
+    db: db_dependency,
+    job_url: str = Query(
+        description="Job URL for which to generate a cover letter for.",
+        examples=["inc_experience"],
+    )
+):
+    logger.info(job_url)
+    try:
+        company, job_description, role = db.query(Job.company, Job.description, Job.role).filter(Job.url == job_url).first().tuple()
+        user_resume_data, name = db.query(User.resume_text, User.full_name).filter(User.email == user["email"]).first().tuple()
+        return llm.generate_cover_letter(
+            resume_data=json.loads(user_resume_data)[role],
+            company=company,
+            name=name,
+            job_description=job_description,
+        )
+    except RateLimitError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            details="Hit rate limit for the LLM models on the server"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            details="Something went wrong",
+        )

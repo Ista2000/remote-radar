@@ -4,7 +4,7 @@ import os
 import traceback
 from typing import Optional
 from dotenv import load_dotenv
-from langchain_core.output_parsers import PydanticOutputParser, JsonOutputParser
+from langchain_core.output_parsers import PydanticOutputParser, JsonOutputParser, StrOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain_groq import ChatGroq
 from groq import RateLimitError
@@ -100,7 +100,7 @@ class LLM:
         """Extract skills from resume"""
         if preferred_roles is None or len(preferred_roles) == 0:
             return {}
-        for llm in self.llms:
+        for idx, llm in enumerate(self.llms):
             try:
                 return (
                     PromptTemplate(
@@ -113,9 +113,47 @@ class LLM:
                     {"resume_data": resume_data, "roles": "\n".join(preferred_roles)}
                 )
             except RateLimitError as e:
+                if idx == len(self.llms) - 1:
+                    logger.error(
+                        f"Rate limit hit for all models: {traceback.format_exc()}"
+                    )
+                else:
+                    logger.warning(
+                        f"Rate limit hit for {LLM_MODELS[idx]}: {traceback.format_exc()}"
+                    )
+                    logger.warning(f"Falling back to {LLM_MODELS[idx + 1]}")
+                continue
+            except Exception:
                 logger.error(
                     f"Error extracting keywords from user resume data: {traceback.format_exc()}"
                 )
+                return {}
+        return {}
+
+    def generate_cover_letter(self, resume_data: str, job_description: str, company: str, name: str):
+        for idx, llm in enumerate(self.llms):
+            try:
+                return (
+                    PromptTemplate(
+                        template=GENERATE_COVER_LETTER_TEMPLATE,
+                        input_variables=["resume_data", "job_description", "name", "company"],
+                    )
+                    | llm
+                    | StrOutputParser()
+                ).invoke(
+                    {"resume_data": resume_data, "job_description": job_description, "name": name, "company": company}
+                )
+            except RateLimitError as e:
+                if idx == len(self.llms) - 1:
+                    logger.error(
+                        f"Rate limit hit for all models: {traceback.format_exc()}"
+                    )
+                    raise e
+                else:
+                    logger.warning(
+                        f"Rate limit hit for {LLM_MODELS[idx]}: {traceback.format_exc()}"
+                    )
+                    logger.warning(f"Falling back to {LLM_MODELS[idx + 1]}")
                 continue
             except Exception:
                 logger.error(
