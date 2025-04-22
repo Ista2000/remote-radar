@@ -1,24 +1,26 @@
 # 🛰️ Remote Radar
 
-[![Python Version](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
+[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/Ista2000/remote-radar/ci.yml)](https://github.com/Ista2000/remote-radar/actions)
 [![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://pre-commit.com/)
 [![License](https://img.shields.io/github/license/Ista2000/remote-radar)](./LICENSE)
 
-**Remote Radar** is an intelligent job aggregator that scrapes remote job listings from multiple websites and uses LLMs to automatically generate tailored job applications. It’s built for developers and remote job seekers who want to **apply smarter, not harder.**
+**Remote Radar** is a side project I built to make job hunting way less painful.
+
+I was tired of hopping across a dozen websites, copying descriptions, and writing the same cover letters again and again. So I decided to automate it. This tool scrapes remote jobs from different platforms and (soon!) uses LLMs to generate tailored applications — because job hunting shouldn’t be a full-time job.
 
 ---
 
 ## 🚀 Features
 
 - 🔎 Aggregates remote jobs from multiple platforms (e.g., LinkedIn, Wellfound)
-- 🧠 Auto-generates personalized job applications using LLMs (WIP)
+- 🧠 Auto-generates personalized job applications using LLMs
 - 📅 Periodic scraping via background schedulers (every 6 hours)
 - 🛡️ Built-in deduplication and database storage
-- 🌐 Beautiful frontend to explore jobs and manage applications
-- 🧪 Automated tests with CI and strict commit quality control
+- 🌐 A clean frontend to explore jobs and manage applications
+- 🧪 Automated tests with CI and pre-commit hooks to keep things sane
 - 🐳 Fully containerized with Docker and Docker Compose
-- ⚡ Lightning-fast job matching via ChromaDB and Groq’s LLaMA 3 models
+- ⚡ Fast semantic search via ChromaDB and Groq’s LLaMA 3 models
 
 ---
 
@@ -38,23 +40,28 @@
 
 ### 1. Clone the Repository
 
-```
+```bash
 git clone https://github.com/Ista2000/remote-radar.git
 cd remote-radar
 ```
+
 ### 2. Install Dependencies
-Backend
-```
+
+**Backend**
+```bash
 cd backend
 poetry install
 ```
-Frontend
-```
+
+**Frontend**
+```bash
 cd frontend
 npm install
 ```
+
 ### 3. Configure Environment Variables
-Backend (`backend/.env`)
+
+**Backend** (`backend/.env`)
 ```
 AUTH_SECRET_KEY=your-secret-key
 AUTH_ALGORITHM=HS256
@@ -62,31 +69,38 @@ DATABASE_URL=your-db-url
 GROQ_API_KEY=your-groq-key
 LLM_MODELS=llama3-model-1,llama3-model-2
 ```
-Frontend (frontend/.env.local)
+
+**Frontend** (`frontend/.env.local`)
 ```
 NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
 ```
+
 ### 4. Run the App
-Backend
-```
+
+**Backend**
+```bash
 poetry run uvicorn main:app --reload
 ```
-Frontend
-```
+
+**Frontend**
+```bash
 npm run dev
 ```
 
 ---
 
 ## 🐳 Docker Setup
+
 ### Prerequisites
 - Docker
 - Docker Compose
 
 ### Run with Docker
-```
+
+```bash
 docker-compose up --build
 ```
+
 ### Access the App
 - Frontend: http://localhost:3000
 - Backend (API Docs): http://localhost:8000/docs
@@ -95,7 +109,7 @@ docker-compose up --build
 
 ## 🧾 Docker Compose Overview
 
-```
+```yaml
 services:
   backend:
     build:
@@ -169,61 +183,77 @@ remote-radar/
 ---
 
 ## 🧠 LLM Integration
-Remote Radar uses Groq’s blazing fast LLaMA 3 models (e.g., `llama3-70b-versatile`) for:
-- Resume matching
-- Personalized application generation
-- Keyword extraction from job descriptions
 
-To use:
-- Add your `GROQ_API_KEY` to `.env`
-- Specify fallback models via `LLM_MODELS`
+Remote Radar taps into Groq’s super fast LLaMA 3 models (like `llama3-70b-versatile`) for:
+
+- Matching jobs with your resume
+- Generating custom job applications
+- Extracting important info from job posts
+
+To try it out:
+- Plug in your `GROQ_API_KEY` in the `.env`
+- Define fallback models using `LLM_MODELS`
 
 ---
 
 ## 🔄 Background Scraping
-Jobs are scraped every 6 hours using `APScheduler` hooked into FastAPI's lifespan events.
 
-Want to change the frequency? Modify the `interval_seconds` in `scheduler.py`.
+Jobs are refreshed every 6 hours with `APScheduler`, all hooked into FastAPI's startup lifecycle.
+
+Want to change how often it scrapes? You can tweak that in `scheduler.py`.
+
+---
 
 ## ✅ Commit Quality & Tests
-Every commit must:
-- ✅ Pass pre-commit checks (ruff, black, mypy)
-- ✅ Include/Update backend tests under backend/tests/
-- ✅ Build cleanly in CI via GitHub Actions
 
-Failing any of these will block the commit.
+To keep things tidy, every commit should:
+- ✅ Pass `pre-commit` hooks (ruff, black, mypy)
+- ✅ Include/update backend tests under `backend/tests/`
+- ✅ Build cleanly via GitHub Actions
+
+CI will scream at you if you don’t 😉
 
 ---
 
 ## 📄 License
-Licensed under the [MIT License](https://github.com/Ista2000/remote-radar/blob/main/LICENSE).
+
+MIT. Do whatever you want. Just don’t sell it as-is, please.
 
 ---
 
 ## 🤝 Contributing
-We welcome contributions of all kinds! 🚀
 
-You can help by:
-- 🧼 Improving scraping coverage
-- ✨ Adding new features or dashboards
-- 🤖 Enhancing LLM usage
-- 🪲 Reporting bugs
-- 📈 Improving documentation
+This started as a one-person effort, but I’d love help!
+
+You can jump in by:
+- 🧼 Adding new sites to scrape
+- ✨ Building out features (dashboards, filters, alerts)
+- 🧠 Improving the AI integration
+- 🪲 Fixing bugs or edge cases
+- 📈 Cleaning up the UI or docs
 
 ### How to Contribute
 - Fork the repo 🍴
-- Create an issue to link with your contribution
-- Create a feature branch 🔧
-- Open a PR with a clear description ✅
+- Create an issue to track your work
+- Make a feature branch
+- Open a PR and tell me what’s new!
+
 ---
+
 ## 💡 Future Ideas
-- 🤝 Match recruiter profiles and draft personalized messages
-- 📩 Email alerts for personalized job matches
-- 💼 Dashboard with saved & applied jobs
-- 🔍 Search and filtering for job listings
-- 🧑‍💻 Resume analysis and scoring
+
+- 🤝 Find recruiter profiles & craft personalized intros
+- 📩 Get email alerts for new matched jobs
+- 💼 Dashboard to manage saved/applied jobs
+- 🔍 Search and filter through listings
+- 🧑‍💻 Score resumes for individual job fits
+
+---
 
 ## 🌍 Join the Radar
-Tired of endlessly scrolling job boards? Let **Remote Radar** do the heavy lifting.
 
-Stay focused on what matters — **getting the right job, faster**.
+Tired of mindless scrolling? Same.
+
+That’s why I built **Remote Radar** — to help job seekers (like me) apply smarter, not harder.
+
+Try it, break it, or improve it. Either way, I hope it saves you a few hours and gets you a few callbacks.
