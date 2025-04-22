@@ -20,8 +20,26 @@ import {
   useColorModeValue,
   Tooltip,
   Link,
+  Tabs,
+  TabList,
+  Tab,
+  TabPanel,
+  Editable,
+  Input,
+  EditablePreview,
+  useEditableControls,
+  ButtonGroup,
+  IconButton,
+  EditableInput,
+  TabPanels,
+  useToast,
+  Spinner,
+  Skeleton,
+  Textarea,
 } from "@chakra-ui/react";
-import { AtSignIcon, CalendarIcon, ExternalLinkIcon, InfoOutlineIcon, StarIcon, TimeIcon, ViewIcon } from "@chakra-ui/icons";
+import { AtSignIcon, CalendarIcon, CheckIcon, CloseIcon, EditIcon, ExternalLinkIcon, InfoOutlineIcon, StarIcon, TimeIcon, ViewIcon } from "@chakra-ui/icons";
+import { useState } from "react";
+import axios from "axios";
 
 export interface JobType {
     company: string;
@@ -74,6 +92,35 @@ const JobCard = ({ job }: JobCardProps) => {
   const cardBg = useColorModeValue("white", "gray.800");
   const descriptionBg = useColorModeValue("gray.50", "gray.700");
   const descriptionTextColor = useColorModeValue("gray.700", "gray.100");
+  const [loading, setLoading] = useState(false);
+  const [coverLetter, setCoverLetter] = useState<string | null>(null);
+  const toast = useToast();
+
+  console.log(coverLetter);
+
+  const handleGenerateCoverLetter = () => {
+    setLoading(true);
+    const generateCoverLetter = async () => {
+      try {
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/job/generate-cover?job_url=${encodeURIComponent(job.url)}`);
+        setCoverLetter(response.data);
+      } catch (e) {
+        console.log(e);
+        toast({
+          position: "top-right",
+          title: 'Cannot generate cover letter',
+          description: "Cannot generate cover letter",
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    generateCoverLetter();
+  }
+
   return (
     <>
       <Box
@@ -192,40 +239,85 @@ const JobCard = ({ job }: JobCardProps) => {
               </Box>
 
               {/* Job Description */}
-              <Box>
-                <Text fontSize="lg" fontWeight="bold" mb={2} color={textColor} paddingLeft={4}>
-                  Description
-                </Text>
-                <Box
-                  bg={descriptionBg}
-                  padding="24px"
-                  borderRadius="md"
-                  boxShadow="sm"
-                  fontSize="sm"
-                  color={descriptionTextColor}
-                  maxHeight="400px"
-                  overflowY="auto"
-                  dangerouslySetInnerHTML={{ __html: job.description }}
-                  sx={{
-                    // Custom CSS
-                    "ul": {
-                      listStyleType: "disc",
-                      paddingLeft: "1.5rem",
-                    },
-                    "li": {
-                      marginBottom: "0.3rem",
-                      color: descriptionTextColor,
-                    },
-                    "h1": {
-                      fontSize: "24px",
-                      marginBottom: "0.6rem",
-                    },
-                    "p": {
-                      marginBottom: "0.5rem",
-                    }
-                  }}
-                />
-              </Box>
+              <Tabs>
+                <TabList>
+                  <Tab>
+                    <Text fontSize="lg" fontWeight="bold" mb={2} color={textColor} paddingLeft={4}>
+                      Description
+                    </Text>
+                  </Tab>
+                  <Tab>
+                  <Text fontSize="lg" fontWeight="bold" mb={2} color={textColor} paddingLeft={4}>
+                      Generate cover letter
+                    </Text>
+                  </Tab>
+                </TabList>
+                <TabPanels>
+                  <TabPanel>
+                    <Box
+                      bg={descriptionBg}
+                      padding="24px"
+                      borderRadius="md"
+                      boxShadow="sm"
+                      fontSize="sm"
+                      color={descriptionTextColor}
+                      maxHeight="450px"
+                      overflowY="auto"
+                      dangerouslySetInnerHTML={{ __html: job.description }}
+                      sx={{
+                        // Custom CSS
+                        "ul": {
+                          listStyleType: "disc",
+                          paddingLeft: "1.5rem",
+                        },
+                        "li": {
+                          marginBottom: "0.3rem",
+                          color: descriptionTextColor,
+                        },
+                        "h1": {
+                          fontSize: "24px",
+                          marginBottom: "0.6rem",
+                        },
+                        "p": {
+                          marginBottom: "0.5rem",
+                        }
+                      }}
+                    />
+                  </TabPanel>
+                  <TabPanel>
+                  <Box
+                      bg={descriptionBg}
+                      padding="24px"
+                      borderRadius="md"
+                      boxShadow="sm"
+                      fontSize="sm"
+                      color={descriptionTextColor}
+                      maxHeight="450px"
+                      overflowY="auto"
+                    >
+                      {loading || !coverLetter ? <Skeleton size="lg" height="250px"/> :
+                        <Textarea
+                          value={coverLetter}
+                          onChange={e => setCoverLetter(e.target.value)}
+                          placeholder='Cover letter'
+                          size='sm'
+                          h="250px"
+                          maxH="420px"
+                        />}
+                      <Text fontSize="sm" color="red">NOTE: The cover letter is not saved and it can only be generated until we hit LLM Rate Limits.</Text>
+                      <Button
+                        size="lg"
+                        bgColor="teal"
+                        color="white"
+                        mt="16px"
+                        onClick={handleGenerateCoverLetter}
+                      >
+                        Generate cover letter
+                      </Button>
+                    </Box>
+                  </TabPanel>
+                </TabPanels>
+              </Tabs>
 
               {/* External Link */}
               <Flex justify="end">
