@@ -16,10 +16,6 @@ import {
   Divider,
   VStack,
   Link,
-  InputGroup,
-  InputLeftElement,
-  Input,
-  InputRightElement,
   useBreakpointValue,
   IconButton,
   Collapse,
@@ -30,7 +26,6 @@ import {
 import {
   ChevronDownIcon,
   MoonIcon,
-  SearchIcon,
   SunIcon,
   HamburgerIcon,
   CloseIcon,
